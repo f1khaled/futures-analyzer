@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argon 4 — Crypto Futures Scalping Analyzer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lightweight Charts by TradingView -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #090b10;
+      --bg-card: #11151f;
+      --bg-card-inner: #161b28;
+      --border-color: #1f2738;
+      --accent-blue: #2563eb;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+    }
+    body {
+      background-color: var(--bg-main);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+    }
+    .card-inner {
+      background-color: var(--bg-card-inner);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+    .glow-blue {
+      text-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+    }
+    .score-ring {
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .needle {
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: 100px 90px;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090b10; }
+    ::-webkit-scrollbar-thumb { background: #1f2738; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+  </style>
+</head>
+<body class="min-h-screen pb-12">
+
+  <!-- Top Utility Bar (Download Single File + Connection Status) -->
+  <div class="bg-[#0d111a] border-b border-[#1f2738] px-4 py-2 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs mono">
+      <div class="flex items-center gap-3">
+        <span id="connStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="connStatusText" class="text-slate-300 font-semibold">LIVE BINANCE USDⓈ-M FUTURES</span>
+        <span class="text-slate-500">•</span>
+        <span id="pairsCount" class="text-slate-400">Loading pairs...</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="retryConnection()" class="px-2.5 py-1 rounded bg-[#161b28] hover:bg-[#1f2738] text-slate-300 border border-[#283248] transition">
+          ↻ Reconnect
+        </button>
+        <button onclick="downloadSelf()" class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold transition flex items-center gap-1.5 shadow-lg shadow-blue-600/20">
+          ⬇ Download Single HTML File
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  <div id="errorBanner" class="hidden max-w-7xl mx-auto mt-4 px-4">
+    <div class="bg-red-950/60 border border-red-500/50 rounded-xl p-4 flex items-center justify-between text-red-200 text-sm">
+      <div>
+        <strong class="font-bold">API Connection Alert:</strong>
+        <span id="errorMessage">Unable to reach Binance Futures API.</span>
+      </div>
+      <button onclick="retryConnection()" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold mono">
+        RETRY NOW
+      </button>
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <header class="max-w-7xl mx-auto pt-6 pb-4 px-4 text-center">
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
+      Crypto Futures <span class="text-blue-500 glow-blue">Analyzer</span>
+    </h1>
+    <p class="mt-2 text-xs md:text-sm text-slate-400 mono">
+      25-pt score across 9 signals • Multi-RSI gauge • OI • Liquidations • L/S ratio • 5m–60m Scalping
+    </p>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 space-y-5">
+
+    <!-- Market Pulse Bar -->
+    <section class="card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 text-xs mono mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-slate-400 tracking-wider">MARKET PULSE</span>
+          <span id="marketPulseLabel" class="font-bold text-sm text-amber-400">CALCULATING...</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="text-slate-400">Avg Fund <strong id="pulseAvgFund" class="text-emerald-400">--%</strong></span>
+          <span id="pulseTopGainer" class="text-emerald-400">🔥 --</span>
+          <span id="pulseTopLoser" class="text-red-400">🥶 --</span>
+        </div>
+      </div>
+      <div class="w-full h-2.5 bg-[#1b2232] rounded-full overflow-hidden flex">
+        <div id="pulseBullBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 33%"></div>
+        <div id="pulseNeutBar" class="bg-slate-600 h-full transition-all duration-500" style="width: 34%"></div>
+        <div id="pulseBearBar" class="bg-red-500 h-full transition-all duration-500" style="width: 33%"></div>
+      </div>
+      <div class="flex justify-between text-xs mono mt-2">
+        <span id="pulseBullCount" class="text-emerald-400">-- bullish</span>
+        <span id="pulseNeutCount" class="text-slate-400">-- neutral</span>
+        <span id="pulseBearCount" class="text-red-400">-- bearish</span>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <div class="card overflow-hidden">
+      <div class="grid grid-cols-4 border-b border-[#1f2738] text-xs md:text-sm mono font-semibold">
+        <button onclick="switchTab('analyze')" id="tabBtn-analyze" class="py-3.5 text-center border-b-2 border-blue-500 text-blue-400 bg-[#141a29] transition">
+          ◉ ANALYZE
+        </button>
+        <button onclick="switchTab('scanner')" id="tabBtn-scanner" class="py-3.5 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+          ⚡ SCANNER
+        </button>
+        <button onclick="switchTab('watch')" id="tabBtn-watch" class="py-3.5 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+          ★ WATCH (<span id="watchCountBadge">0</span>)
+        </button>
+        <button onclick="switchTab('risk')" id="tabBtn-risk" class="py-3.5 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+          🛡 RISK CALC
+        </button>
+      </div>
+
+      <!-- TAB 1: ANALYZE -->
+      <div id="tab-analyze" class="p-4 md:p-6 space-y-6">
+        
+        <!-- Symbol Controls & Quick Picks -->
+        <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs mono text-slate-400 tracking-wider">TRADING PAIR (USDⓈ-M PERPETUAL)</label>
+              <button onclick="toggleWatchlistCurrent()" id="watchToggleBtn" class="px-3 py-1 rounded-full text-xs mono border border-[#29344d] text-slate-300 hover:border-blue-500 transition">
+                ☆ Watch
+              </button>
+            </div>
+            <div class="flex gap-2">
+              <div class="relative flex-1">
+                <input list="futuresSymbolsList" id="symbolInput" value="BTCUSDT" placeholder="Search symbol (e.g. BTCUSDT, SOLUSDT)..." 
+                  class="w-full bg-[#0c0f17] border border-[#263046] focus:border-blue-500 rounded-xl px-4 py-3 text-white mono font-bold uppercase outline-none transition">
+                <datalist id="futuresSymbolsList"></datalist>
+              </div>
+              <button onclick="runFullAnalysis()" id="analyzeBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/30">
+                Analyze
+              </button>
+            </div>
+            <!-- Quick Chips -->
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              <button onclick="selectQuickSymbol('BTCUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-blue-400">BTC</button>
+              <button onclick="selectQuickSymbol('ETHUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">ETH</button>
+              <button onclick="selectQuickSymbol('SOLUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">SOL</button>
+              <button onclick="selectQuickSymbol('BNBUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">BNB</button>
+              <button onclick="selectQuickSymbol('XRPUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">XRP</button>
+              <button onclick="selectQuickSymbol('DOGEUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">DOGE</button>
+              <button onclick="selectQuickSymbol('SUIUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">SUI</button>
+              <button onclick="selectQuickSymbol('PEPEUSDT')" class="px-3 py-1 rounded-full text-xs mono bg-[#161c2a] hover:bg-blue-600/20 border border-[#263147] text-slate-300">1000PEPE</button>
+            </div>
+          </div>
+
+          <!-- Timeframe Selector -->
+          <div class="space-y-2">
+            <label class="text-xs mono text-slate-400 tracking-wider block">SCALPING TIMEFRAME</label>
+            <div class="flex bg-[#0c0f17] p-1 rounded-xl border border-[#263046] mono text-xs">
+              <button onclick="changeTimeframe('1m')" id="tf-1m" class="tf-btn px-3 py-2 rounded-lg text-slate-400 hover:text-white transition">1m</button>
+              <button onclick="changeTimeframe('3m')" id="tf-3m" class="tf-btn px-3 py-2 rounded-lg text-slate-400 hover:text-white transition">3m</button>
+              <button onclick="changeTimeframe('5m')" id="tf-5m" class="tf-btn px-3 py-2 rounded-lg bg-blue-600 text-white font-bold transition">5m</button>
+              <button onclick="changeTimeframe('15m')" id="tf-15m" class="tf-btn px-3 py-2 rounded-lg text-slate-400 hover:text-white transition">15m</button>
+              <button onclick="changeTimeframe('30m')" id="tf-30m" class="tf-btn px-3 py-2 rounded-lg text-slate-400 hover:text-white transition">30m</button>
+              <button onclick="changeTimeframe('1h')" id="tf-1h" class="tf-btn px-3 py-2 rounded-lg text-slate-400 hover:text-white transition">1h</button>
+            </div>
+            <div class="text-[11px] mono text-slate-500 text-right">
+              Contract: <span id="contractSpecText" class="text-slate-300">Perpetual • Tick 0.10</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Grid: Left (Original Score Ring + Legend + Cards) | Right (Candlestick Chart + Actionable Scalping Signal) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Left Column (5 Cols): Faithful Recreation of Original Mobile Layout -->
+          <div class="lg:col-span-5 space-y-5">
+            
+            <!-- 25-Point Circular Score Gauge -->
+            <div class="card-inner p-6 text-center flex flex-col items-center">
+              <span id="signalStrengthBadge" class="px-3 py-1 rounded-full text-xs mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 mb-4">
+                ANALYZING...
+              </span>
+
+              <div class="relative w-48 h-48 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="66" stroke="#1e2638" stroke-width="12" fill="none"></circle>
+                  <circle id="scoreRingCircle" class="score-ring" cx="80" cy="80" r="66" stroke="#f59e0b" stroke-width="12" fill="none"
+                    stroke-dasharray="414.69" stroke-dashoffset="265" stroke-linecap="round"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center mono">
+                  <span id="scoreValueText" class="text-5xl font-extrabold text-amber-400">--</span>
+                  <span class="text-xs text-slate-400 mt-1">/ 25 pts</span>
+                </div>
+              </div>
+
+              <div class="mt-3 text-xs mono text-slate-400">
+                <span id="activeSymbolLabel">BTCUSDT</span> • <span id="lastUpdatedTime">--:--:--</span>
+              </div>
+
+              <!-- 4 Tier Legend Boxes (From Screenshot 4) -->
+              <div class="grid grid-cols-2 gap-2.5 w-full mt-5 text-left">
+                <div class="p-3 rounded-xl bg-[#111722] border border-[#1f293d]">
+                  <div class="flex items-center gap-1.5 text-xs mono font-bold text-emerald-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Strong <span class="text-slate-400 font-normal">≥18 pts</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Multiple confluent signals — high-conviction setup</p>
+                </div>
+                <div class="p-3 rounded-xl bg-[#111722] border border-[#1f293d]">
+                  <div class="flex items-center gap-1.5 text-xs mono font-bold text-yellow-400">
+                    <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Good <span class="text-slate-400 font-normal">≥13 pts</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Decent signal with some confirmation</p>
+                </div>
+                <div class="p-3 rounded-xl bg-[#111722] border border-[#1f293d]">
+                  <div class="flex items-center gap-1.5 text-xs mono font-bold text-amber-500">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span> Weak <span class="text-slate-400 font-normal">≥7 pts</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">A few signals align but not enough to act</p>
+                </div>
+                <div class="p-3 rounded-xl bg-[#111722] border border-[#1f293d]">
+                  <div class="flex items-center gap-1.5 text-xs mono font-bold text-red-400">
+                    <span class="w-2 h-2 rounded-full bg-red-400"></span> None <span class="text-slate-400 font-normal">≥0 pts</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Avoid — conflicting or missing signals</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Last Price Card with Sparkline & Mark/Index Price -->
+            <div class="card-inner p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-xs mono text-slate-400">LAST PRICE</div>
+                  <div id="lastPriceDisplay" class="text-3xl font-extrabold mono text-white mt-1">$--</div>
+                  <div id="priceChange24hDisplay" class="text-xs mono font-semibold text-slate-400 mt-1">--% 24h</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs mono text-slate-400 mb-1">Recent Trend</div>
+                  <svg id="miniSparkline" width="110" height="40" class="overflow-visible">
+                    <polyline fill="none" stroke="#3b82f6" stroke-width="2" points="0,20 110,20"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[#222b3d] text-xs mono">
+                <div>Mark Price: <span id="markPriceDisplay" class="text-slate-200 font-semibold">$--</span></div>
+                <div class="text-right">Index Price: <span id="indexPriceDisplay" class="text-slate-200 font-semibold">$--</span></div>
+              </div>
+            </div>
+
+            <!-- 6 Core Metric Cards (2x3 Grid from Screenshots 1 & 4) -->
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Volume 24H -->
+              <div class="card-inner p-4">
+                <div class="flex justify-between items-center text-xs mono text-slate-400">
+                  <span>VOLUME 24H</span>
+                  <span title="24-Hour USDT Quote Volume on Binance Futures" class="cursor-help text-slate-500 border border-slate-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">?</span>
+                </div>
+                <div id="metricVol24h" class="text-2xl font-bold mono text-white mt-2">$--</div>
+                <div id="metricVolSub" class="text-xs mono text-slate-400 mt-1">Total USDT traded</div>
+              </div>
+
+              <!-- Short-Term Momentum -->
+              <div class="card-inner p-4">
+                <div class="flex justify-between items-center text-xs mono text-slate-400">
+                  <span id="momShortTitle">15M MOMENTUM</span>
+                  <span title="Price percentage change over short scalping window" class="cursor-help text-slate-500 border border-slate-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">?</span>
+                </div>
+                <div id="metricMomShort" class="text-2xl font-bold mono text-slate-200 mt-2">--%</div>
+                <div id="metricMomShortSub" class="text-xs mono text-slate-400 mt-1">Short-term trend</div>
+              </div>
+
+              <!-- 1H Momentum -->
+              <div class="card-inner p-4">
+                <div class="flex justify-between items-center text-xs mono text-slate-400">
+                  <span>1H MOMENTUM</span>
+                  <span title="1-Hour price change confirming higher-timeframe direction" class="cursor-help text-slate-500 border border-slate-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">?</span>
+                </div>
+                <div id="metricMom1h" class="text-2xl font-bold mono text-slate-200 mt-2">--%</div>
+                <div id="metricMom1hSub" class="text-xs mono text-slate-400 mt-1">Mid-term bias</div>
+              </div>
+
+              <!-- Funding Rate -->
+              <div class="card-inner p-4">
+                <div class="flex justify-between items-center text-xs mono text-slate-400">
+                  <span>FUNDING RATE</span>
+                  <span title="Current perpetual funding rate" class="cursor-help text-slate-500 border border-slate-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">?</span>
+                </div>
+                <div id="metricFunding" class="text-2xl font-bold mono text-slate-200 mt-2">--%</div>
+                <div id="metricFundingSub" class="text-xs mono text-slate-400 mt-1">Perpetual premium</div>
+              </div>
+
+              <!-- OI Change -->
+              <div class="card-inner p-4">
+                <div class="flex justify-between items-center text-xs mono text-slate-400">
+                  <span>OI CHANGE (1H)</span>
+                  <span title="Open Interest change over recent periods" class="cursor-help text-slate-500 border border-slate-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">?</span>
+                </div>
+                <div id="metricOIChange" class="text-2xl font-bold mono text-emerald-400 mt-2">--%</div>
+                <div id="metricOISub" class="text-xs mono text-slate-400 mt-1">Open Interest delta</div>
+              </div>
+
+              <!-- % Long (L/S Ratio) -->
+              <div class="card-inner p-4">
+                <div class="flex justify-between items-center text-xs mono text-slate-400">
+                  <span>% LONG</span>
+                  <span title="Global Top Trader / Account Long percentage" class="cursor-help text-slate-500 border border-slate-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">?</span>
+                </div>
+                <div id="metricLongPct" class="text-2xl font-bold mono text-amber-400 mt-2">--%</div>
+                <div id="metricLongSub" class="text-xs mono text-slate-400 mt-1">Crowd positioning</div>
+              </div>
+            </div>
+
+            <!-- Semi-Circle RSI Gauge Card (From Screenshot 1) -->
+            <div class="card-inner p-5 text-center">
+              <div class="text-xs mono text-slate-400 tracking-wider">
+                RSI • MULTI-PERIOD (6 / 12 / 24) • <span id="rsiTfLabel">5M</span> CANDLES
+              </div>
+              <div class="relative w-56 h-32 mx-auto mt-3">
+                <svg viewBox="0 0 200 110" class="w-full h-full">
+                  <!-- Buy Zone Arc (0-30) -->
+                  <path d="M 20 90 A 80 80 0 0 1 56 24" fill="none" stroke="#10b981" stroke-width="10" stroke-linecap="round"/>
+                  <!-- Neutral Arc (30-70) -->
+                  <path d="M 60 22 A 80 80 0 0 1 140 22" fill="none" stroke="#334155" stroke-width="10"/>
+                  <!-- Sell Zone Arc (70-100) -->
+                  <path d="M 144 24 A 80 80 0 0 1 180 90" fill="none" stroke="#ef4444" stroke-width="10" stroke-linecap="round"/>
+                  <text x="100" y="12" text-anchor="middle" fill="#64748b" font-size="10" class="mono">50</text>
+                  <!-- Needle -->
+                  <g id="rsiNeedle" class="needle" style="transform: rotate(0deg);">
+                    <line x1="100" y1="90" x2="100" y2="22" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="100" cy="90" r="5" fill="#94a3b8"/>
+                  </g>
+                </svg>
+              </div>
+              <div class="flex items-center justify-center gap-3 -mt-2">
+                <span id="rsiMainValue" class="text-2xl font-extrabold mono text-white">--</span>
+                <span id="rsiZoneBadge" class="px-2.5 py-0.5 rounded-full text-xs mono bg-slate-800 text-slate-300">Neutral zone</span>
+              </div>
+              <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[#222b3d] text-xs mono">
+                <div>RSI(6): <strong id="rsi6Val" class="text-slate-200">--</strong></div>
+                <div>RSI(12): <strong id="rsi12Val" class="text-slate-200">--</strong></div>
+                <div>RSI(24): <strong id="rsi24Val" class="text-slate-200">--</strong></div>
+              </div>
+              <div class="flex justify-center gap-4 text-xs mono mt-2">
+                <span class="text-emerald-400">← Buy zone (&lt;30)</span>
+                <span class="text-red-400">Sell zone (&gt;70) →</span>
+              </div>
+            </div>
+
+            <!-- Taker Buy / Sell Pressure Card (Real Data Upgraded from Liquidations Proxy) -->
+            <div class="card-inner p-5">
+              <div class="flex items-center justify-between text-xs mono text-slate-400 mb-3">
+                <span>AGGRESSIVE ORDERFLOW & PRESSURE</span>
+                <span class="text-[11px] text-slate-500">Real Taker Volume</span>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <div class="text-xs text-slate-400 mono">Aggressive Sellers (Short Pressure)</div>
+                  <div id="sellPressureVal" class="text-2xl font-extrabold mono text-red-400 mt-1">$--</div>
+                  <div class="text-[11px] text-slate-500 mono mt-0.5">Market sell notional</div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-400 mono">Aggressive Buyers (Long Pressure)</div>
+                  <div id="buyPressureVal" class="text-2xl font-extrabold mono text-emerald-400 mt-1">$--</div>
+                  <div class="text-[11px] text-slate-500 mono mt-0.5">Market buy notional</div>
+                </div>
+              </div>
+              <div class="w-full h-2.5 bg-[#1e2638] rounded-full overflow-hidden flex mt-4">
+                <div id="sellPressureBar" class="bg-red-500 h-full transition-all duration-500" style="width: 50%"></div>
+                <div id="buyPressureBar" class="bg-emerald-400 h-full transition-all duration-500" style="width: 50%"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column (7 Cols): Interactive Chart + Scalping Trade Signal + 9-Point Breakdown -->
+          <div class="lg:col-span-7 space-y-5">
+            
+            <!-- Candlestick Chart + Overlays -->
+            <div class="card-inner p-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold mono text-white" id="chartTitle">BTCUSDT • 5m Chart</span>
+                  <span class="text-xs mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Live WebSocket</span>
+                </div>
+                <!-- Indicator Legend -->
+                <div class="flex flex-wrap items-center gap-3 text-xs mono">
+                  <span class="text-yellow-400">● EMA 7: <strong id="legEma7">--</strong></span>
+                  <span class="text-purple-400">● EMA 25: <strong id="legEma25">--</strong></span>
+                  <span class="text-pink-500">● EMA 99: <strong id="legEma99">--</strong></span>
+                  <span class="text-cyan-400">● VWAP: <strong id="legVwap">--</strong></span>
+                </div>
+              </div>
+              
+              <!-- TradingView Lightweight Chart Container -->
+              <div id="tvChartContainer" class="w-full h-[380px] rounded-lg overflow-hidden border border-[#1f2738]"></div>
+              
+              <div class="grid grid-cols-3 gap-2 mt-3 pt-2 text-xs mono text-slate-400">
+                <div>Vol MA(5): <span id="volMa5Text" class="text-slate-200">--</span></div>
+                <div>Vol MA(10): <span id="volMa10Text" class="text-slate-200">--</span></div>
+                <div class="text-right">Support / Res: <span id="srLevelsText" class="text-slate-200">-- / --</span></div>
+              </div>
+            </div>
+
+            <!-- Actionable Scalping Signal Card (5m - 60m) -->
+            <div class="card-inner p-5 border-l-4 border-l-amber-500" id="scalpSignalCard">
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#222b3d]">
+                <div>
+                  <span class="text-xs mono text-slate-400 uppercase tracking-wider">SCALPING SIGNAL ENGINE (5–60 MIN)</span>
+                  <div class="flex items-center gap-3 mt-1">
+                    <span id="sigDirectionBadge" class="px-3 py-1 rounded-lg font-extrabold mono text-sm bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                      WAIT — NO CLEAR EDGE
+                    </span>
+                    <span id="sigHoldDuration" class="text-xs mono text-slate-400">Est. Hold: 15–45 mins</span>
+                  </div>
+                </div>
+                <div class="text-right mono text-xs text-slate-400">
+                  <div>Issued: <span id="sigTimestamp" class="text-slate-200">--:--:--</span></div>
+                  <div>Expires: <span id="sigExpiration" class="text-slate-200">--:--:--</span></div>
+                </div>
+              </div>
+
+              <!-- Signal Numerical Targets -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                <div class="p-3 rounded-lg bg-[#0d111a] border border-[#1f2738]">
+                  <div class="text-[11px] mono text-slate-400">ENTRY ZONE</div>
+                  <div id="sigEntryZone" class="text-sm font-bold mono text-white mt-1">--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0d111a] border border-[#1f2738]">
+                  <div class="text-[11px] mono text-red-400">STOP-LOSS</div>
+                  <div id="sigStopLoss" class="text-sm font-bold mono text-red-400 mt-1">--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0d111a] border border-[#1f2738]">
+                  <div class="text-[11px] mono text-emerald-400">TAKE-PROFIT (TP1 / TP2)</div>
+                  <div id="sigTakeProfit" class="text-sm font-bold mono text-emerald-400 mt-1">--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0d111a] border border-[#1f2738]">
+                  <div class="text-[11px] mono text-blue-400">RISK / REWARD</div>
+                  <div id="sigRiskReward" class="text-sm font-bold mono text-blue-400 mt-1">--</div>
+                </div>
+              </div>
+
+              <!-- Reasons & Invalidation -->
+              <div class="space-y-2 text-xs">
+                <div class="flex items-start gap-2">
+                  <span class="text-blue-400 font-bold mono shrink-0">Confluence:</span>
+                  <span id="sigReasonsText" class="text-slate-300">Evaluating multi-timeframe EMA alignment, VWAP position, RSI momentum, and orderflow...</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-red-400 font-bold mono shrink-0">Invalidation:</span>
+                  <span id="sigInvalidationText" class="text-slate-400">--</span>
+                </div>
+              </div>
+
+              <div class="mt-3 pt-2 border-t border-[#1f2738] flex justify-between items-center text-[11px] text-slate-500 mono">
+                <span>Analytical setup only • No profit guarantee</span>
+                <button onclick="sendSignalToRiskCalc()" class="text-blue-400 hover:underline font-semibold">
+                  → Load into Risk Calculator
+                </button>
+              </div>
+            </div>
+
+            <!-- SIGNAL BREAKDOWN (9 Signals / 25 Points — Exact Match to Screenshot 3) -->
+            <div class="card-inner p-5">
+              <div class="flex items-center justify-between text-xs mono mb-4">
+                <span class="text-slate-400 tracking-wider font-semibold">SIGNAL BREAKDOWN</span>
+                <span id="breakdownTotalPts" class="text-amber-400 font-bold">-- / 25 pts</span>
+              </div>
+              <div id="signalBreakdownList" class="space-y-2.5">
+                <!-- Populated dynamically via JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: MULTI-SYMBOL SCALPING SCANNER -->
+      <div id="tab-scanner" class="hidden p-4 md:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-bold text-white">Live Futures Scalping Scanner</h2>
+            <p class="text-xs text-slate-400 mono">Scans top liquid Binance USDⓈ-M Futures pairs for 25-pt confluence scores in real time.</p>
+          </div>
+          <button onclick="runScanner()" id="scanBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs mono font-bold transition">
+            ⚡ Scan Top 15 Liquid Pairs Now
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs mono">
+            <thead>
+              <tr class="border-b border-[#1f2738] text-slate-400">
+                <th class="py-3 px-3">PAIR</th>
+                <th class="py-3 px-3">PRICE</th>
+                <th class="py-3 px-3">24H %</th>
+                <th class="py-3 px-3">RSI (12)</th>
+                <th class="py-3 px-3">VWAP BIAS</th>
+                <th class="py-3 px-3">FUNDING</th>
+                <th class="py-3 px-3">SCORE</th>
+                <th class="py-3 px-3">SIGNAL</th>
+                <th class="py-3 px-3 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="scannerTableBody" class="divide-y divide-[#1a2130]">
+              <tr><td colspan="9" class="py-6 text-center text-slate-500">Click "Scan Top 15 Liquid Pairs Now" to rank live opportunities.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: CUSTOMIZABLE WATCHLIST -->
+      <div id="tab-watch" class="hidden p-4 md:p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white">Saved Watchlist</h2>
+            <p class="text-xs text-slate-400 mono">Real-time monitoring for your pinned Binance Futures contracts.</p>
+          </div>
+          <button onclick="refreshWatchlist()" class="px-3 py-1.5 bg-[#161b28] hover:bg-[#1f2738] text-slate-200 rounded-lg text-xs mono border border-[#283248]">
+            ↻ Refresh Watchlist
+          </button>
+        </div>
+        <div id="watchlistGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- TAB 4: FUTURES RISK & LIQUIDATION CALCULATOR -->
+      <div id="tab-risk" class="hidden p-4 md:p-6 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-6 card-inner p-5 space-y-4">
+            <h2 class="text-base font-bold text-white mono">Futures Position & Risk Calculator</h2>
+            <div class="grid grid-cols-2 gap-4 text-xs mono">
+              <div>
+                <label class="text-slate-400 block mb-1">Account Balance (USDT)</label>
+                <input type="number" id="rcBalance" value="1000" step="50" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+              <div>
+                <label class="text-slate-400 block mb-1">Risk Per Trade (%)</label>
+                <input type="number" id="rcRiskPct" value="1.0" step="0.25" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+              <div>
+                <label class="text-slate-400 block mb-1">Entry Price ($)</label>
+                <input type="number" id="rcEntry" value="81000" step="any" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+              <div>
+                <label class="text-slate-400 block mb-1">Stop-Loss Price ($)</label>
+                <input type="number" id="rcStop" value="80600" step="any" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+              <div>
+                <label class="text-slate-400 block mb-1">Take-Profit Price ($)</label>
+                <input type="number" id="rcTarget" value="81800" step="any" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+              <div>
+                <label class="text-slate-400 block mb-1">Leverage (x)</label>
+                <input type="number" id="rcLeverage" value="10" min="1" max="125" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+              <div class="col-span-2">
+                <label class="text-slate-400 block mb-1">Round-Trip Estimated Fee (% Maker/Taker)</label>
+                <input type="number" id="rcFeePct" value="0.08" step="0.01" oninput="calculateRisk()" class="w-full bg-[#0c0f17] border border-[#263046] rounded-lg p-2.5 text-white">
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-6 card-inner p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="text-base font-bold text-white mono mb-3">Calculated Sizing & Margin</h3>
+              <div class="grid grid-cols-2 gap-3 text-xs mono">
+                <div class="p-3 rounded-lg bg-[#0c0f17] border border-[#1f2738]">
+                  <span class="text-slate-400">Position Size (Units)</span>
+                  <div id="rcOutUnits" class="text-lg font-bold text-white mt-1">--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0c0f17] border border-[#1f2738]">
+                  <span class="text-slate-400">Notional Exposure</span>
+                  <div id="rcOutNotional" class="text-lg font-bold text-blue-400 mt-1">$--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0c0f17] border border-[#1f2738]">
+                  <span class="text-slate-400">Required Initial Margin</span>
+                  <div id="rcOutMargin" class="text-lg font-bold text-amber-400 mt-1">$--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0c0f17] border border-[#1f2738]">
+                  <span class="text-slate-400">Est. Liquidation Price</span>
+                  <div id="rcOutLiq" class="text-lg font-bold text-purple-400 mt-1">$--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0c0f17] border border-[#1f2738]">
+                  <span class="text-slate-400">Potential Net Loss (incl. fees)</span>
+                  <div id="rcOutLoss" class="text-lg font-bold text-red-400 mt-1">-$--</div>
+                </div>
+                <div class="p-3 rounded-lg bg-[#0c0f17] border border-[#1f2738]">
+                  <span class="text-slate-400">Potential Net Profit (incl. fees)</span>
+                  <div id="rcOutProfit" class="text-lg font-bold text-emerald-400 mt-1">+$--</div>
+                </div>
+              </div>
+              <div class="mt-3 p-3 rounded-lg bg-blue-950/30 border border-blue-500/30 flex justify-between items-center text-xs mono">
+                <span>Net Risk / Reward Ratio:</span>
+                <strong id="rcOutRR" class="text-base text-blue-400">1 : --</strong>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30 text-xs text-amber-200/90 space-y-1">
+              <div class="font-bold mono text-amber-400">⚠ Leverage & Liquidation Warning</div>
+              <p class="leading-relaxed">
+                Higher leverage reduces required initial margin but brings your liquidation price closer to entry. Ensure your Stop-Loss triggers well before the estimated liquidation threshold. This platform is strictly for market analysis and does not execute trades.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-7xl mx-auto px-4 mt-8 text-center text-xs mono text-slate-500">
+    Powered by Official Binance USDⓈ-M Futures API (fapi.binance.com) • Real-Time Market Analysis Only • Not Financial Advice
+  </footer>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    /*************************************************************************
+     * STATE & CONFIGURATION
+     *************************************************************************/
+    const FAPI_REST = 'https://fapi.binance.com';
+    const FAPI_WS   = 'wss://fstream.binance.com/ws';
+
+    let state = {
+      symbol: 'BTCUSDT',
+      timeframe: '5m',
+      symbolsMap: {},
+      watchlist: JSON.parse(localStorage.getItem('argon4_watchlist') || '["BTCUSDT","ETHUSDT","SOLUSDT"]'),
+      ws: null,
+      chart: null,
+      candleSeries: null,
+      ema7Series: null,
+      ema25Series: null,
+      ema99Series: null,
+      vwapSeries: null,
+      lastSignal: null
+    };
+
+    /*************************************************************************
+     * TECHNICAL INDICATOR CALCULATIONS (EMA, RSI, VWAP, VOLUME MA)
+     *************************************************************************/
+    function calcEMA(values, period) {
+      const k = 2 / (period + 1);
+      const emaArray = [];
+      let ema = values[0];
+      for (let i = 0; i < values.length; i++) {
+        ema = i === 0 ? values[i] : values[i] * k + ema * (1 - k);
+        emaArray.push(ema);
+      }
+      return emaArray;
+    }
+
+    function calcRSI(closes, period) {
+      if (closes.length <= period) return 50;
+      let gains = 0, losses = 0;
+      for (let i = 1; i <= period; i++) {
+        const diff = closes[i] - closes[i - 1];
+        if (diff >= 0) gains += diff; else losses -= diff;
+      }
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+      for (let i = period + 1; i < closes.length; i++) {
+        const diff = closes[i] - closes[i - 1];
+        const gain = diff > 0 ? diff : 0;
+        const loss = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * (period - 1) + gain) / period;
+        avgLoss = (avgLoss * (period - 1) + loss) / period;
+      }
+      if (avgLoss === 0) return 100;
+      const rs = avgGain / avgLoss;
+      return 100 - (100 / (1 + rs));
+    }
+
+    function calcVWAP(candles) {
+      let cumPV = 0;
+      let cumVol = 0;
+      return candles.map(c => {
+        const typicalPrice = (c.high + c.low + c.close) / 3;
+        cumPV += typicalPrice * c.volume;
+        cumVol += c.volume;
+        return cumVol > 0 ? cumPV / cumVol : c.close;
+      });
+    }
+
+    function calcSMA(values, period) {
+      if (values.length < period) return values[values.length - 1] || 0;
+      const slice = values.slice(-period);
+      return slice.reduce((a, b) => a + b, 0) / period;
+    }
+
+    /*************************************************************************
+     * FORMATTERS
+     *************************************************************************/
+    function fmtPrice(p) {
+      const n = Number(p);
+      if (isNaN(n)) return '--';
+      if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+      if (n >= 1) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      return n.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+    }
+
+    function fmtCompactUSD(n) {
+      const val = Number(n);
+      if (isNaN(val)) return '$--';
+      if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
+      if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
+      if (val >= 1e3) return '$' + (val / 1e3).toFixed(1) + 'K';
+      return '$' + val.toFixed(0);
+    }
+
+    /*************************************************************************
+     * CHART INITIALIZATION
+     *************************************************************************/
+    function initChart() {
+      const container = document.getElementById('tvChartContainer');
+      state.chart = LightweightCharts.createChart(container, {
+        layout: {
+          background: { type: 'solid', color: '#0c0f17' },
+          textColor: '#94a3b8',
+          fontFamily: 'JetBrains Mono'
+        },
+        grid: {
+          vertLines: { color: '#161d2b' },
+          horzLines: { color: '#161d2b' }
+        },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: '#1f2738' },
+        timeScale: { borderColor: '#1f2738', timeVisible: true, secondsVisible: false }
+      });
+
+      state.candleSeries = state.chart.addCandlestickSeries({
+        upColor: '#10b981', downColor: '#ef4444',
+        borderUpColor: '#10b981', borderDownColor: '#ef4444',
+        wickUpColor: '#10b981', wickDownColor: '#ef4444'
+      });
+
+      state.ema7Series  = state.chart.addLineSeries({ color: '#facc15', lineWidth: 1, priceLineVisible: false });
+      state.ema25Series = state.chart.addLineSeries({ color: '#a855f7', lineWidth: 1, priceLineVisible: false });
+      state.ema99Series = state.chart.addLineSeries({ color: '#ec4899', lineWidth: 1, priceLineVisible: false });
+      state.vwapSeries  = state.chart.addLineSeries({ color: '#22d3ee', lineWidth: 2, lineStyle: 2, priceLineVisible: false });
+
+      window.addEventListener('resize', () => {
+        if (state.chart) state.chart.applyOptions({ width: container.clientWidth });
+      });
+    }
+
+    /*************************************************************************
+     * BINANCE FUTURES API FETCHERS
+     *************************************************************************/
+    async function fetchJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
+      return await res.json();
+    }
+
+    async function loadExchangeAndPulse() {
+      try {
+        hideError();
+        const [exInfo, tickers, premiums] = await Promise.all([
+          fetchJSON(`${FAPI_REST}/fapi/v1/exchangeInfo`),
+          fetchJSON(`${FAPI_REST}/fapi/v1/ticker/24hr`),
+          fetchJSON(`${FAPI_REST}/fapi/v1/premiumIndex`)
+        ]);
+
+        const activePerps = exInfo.symbols.filter(s => s.contractType === 'PERPETUAL' && s.status === 'TRADING' && s.quoteAsset === 'USDT');
+        document.getElementById('pairsCount').textContent = `${activePerps.length} PERPETUAL PAIRS`;
+
+        const datalist = document.getElementById('futuresSymbolsList');
+        datalist.innerHTML = '';
+        activePerps.forEach(s => {
+          state.symbolsMap[s.symbol] = s;
+          const opt = document.createElement('option');
+          opt.value = s.symbol;
+          datalist.appendChild(opt);
+        });
+
+        // Compute Market Pulse across top 30 liquid USDT perpetuals
+        const validTickers = tickers
+          .filter(t => state.symbolsMap[t.symbol])
+          .sort((a, b) => Number(b.quoteVolume) - Number(a.quoteVolume))
+          .slice(0, 30);
+
+        let bull = 0, bear = 0, neut = 0;
+        let topGainer = validTickers[0], topLoser = validTickers[0];
+
+        validTickers.forEach(t => {
+          const chg = Number(t.priceChangePercent);
+          if (chg > 1.5) bull++;
+          else if (chg < -1.5) bear++;
+          else neut++;
+          if (chg > Number(topGainer.priceChangePercent)) topGainer = t;
+          if (chg < Number(topLoser.priceChangePercent)) topLoser = t;
+        });
+
+        const fundSlice = premiums.filter(p => state.symbolsMap[p.symbol]).slice(0, 50);
+        const avgFund = fundSlice.reduce((acc, p) => acc + Number(p.lastFundingRate || 0), 0) / (fundSlice.length || 1) * 100;
+
+        document.getElementById('pulseAvgFund').textContent = `${avgFund >= 0 ? '+' : ''}${avgFund.toFixed(4)}%`;
+        document.getElementById('pulseTopGainer').textContent = `🔥 ${topGainer.symbol.replace('USDT','')} +${Number(topGainer.priceChangePercent).toFixed(2)}%`;
+        document.getElementById('pulseTopLoser').textContent = `🥶 ${topLoser.symbol.replace('USDT','')} ${Number(topLoser.priceChangePercent).toFixed(2)}%`;
+
+        document.getElementById('pulseBullCount').textContent = `${bull} bullish`;
+        document.getElementById('pulseNeutCount').textContent = `${neut} neutral`;
+        document.getElementById('pulseBearCount').textContent = `${bear} bearish`;
+
+        document.getElementById('pulseBullBar').style.width = `${(bull / 30) * 100}%`;
+        document.getElementById('pulseNeutBar').style.width = `${(neut / 30) * 100}%`;
+        document.getElementById('pulseBearBar').style.width = `${(bear / 30) * 100}%`;
+
+        const pulseLabel = document.getElementById('marketPulseLabel');
+        if (bull > bear + 4) {
+          pulseLabel.textContent = 'Bullish';
+          pulseLabel.className = 'font-bold text-sm text-emerald-400';
+        } else if (bear > bull + 4) {
+          pulseLabel.textContent = 'Bearish';
+          pulseLabel.className = 'font-bold text-sm text-red-400';
+        } else {
+          pulseLabel.textContent = 'Mixed / Neutral';
+          pulseLabel.className = 'font-bold text-sm text-amber-400';
+        }
+
+      } catch (err) {
+        showError(`Market Pulse Error: ${err.message}`);
+      }
+    }
+
+    /*************************************************************************
+     * CORE SCALPING ANALYSIS ENGINE (9 SIGNALS / 25 POINTS + MULTI-TF)
+     *************************************************************************/
+    async function runFullAnalysis() {
+      const rawInput = document.getElementById('symbolInput').value.trim().toUpperCase();
+      const symbol = rawInput.endsWith('USDT') ? rawInput : `${rawInput}USDT`;
+      document.getElementById('symbolInput').value = symbol;
+      state.symbol = symbol;
+
+      updateWatchButtonUI();
+      document.getElementById('analyzeBtn').textContent = 'Loading...';
+
+      try {
+        hideError();
+        // Fetch primary timeframe klines, 1h klines, 24hr ticker, mark/funding, OI history, and L/S ratio
+        const [klinesMain, klines1h, ticker24h, premiumIdx, oiHist, lsRatio] = await Promise.all([
+          fetchJSON(`${FAPI_REST}/fapi/v1/klines?symbol=${symbol}&interval=${state.timeframe}&limit=150`),
+          fetchJSON(`${FAPI_REST}/fapi/v1/klines?symbol=${symbol}&interval=1h&limit=48`),
+          fetchJSON(`${FAPI_REST}/fapi/v1/ticker/24hr?symbol=${symbol}`),
+          fetchJSON(`${FAPI_REST}/fapi/v1/premiumIndex?symbol=${symbol}`),
+          fetchJSON(`${FAPI_REST}/futures/data/openInterestHist?symbol=${symbol}&period=5m&limit=13`).catch(() => []),
+          fetchJSON(`${FAPI_REST}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=5m&limit=2`).catch(() => [])
+        ]);
+
+        // Parse closed candles (exclude incomplete last candle for strict indicator reliability, keep last for chart)
+        const candles = klinesMain.map(k => ({
+          time: Math.floor(k[0] / 1000),
+          open: Number(k[1]),
+          high: Number(k[2]),
+          low: Number(k[3]),
+          close: Number(k[4]),
+          volume: Number(k[5]),
+          quoteVol: Number(k[7]),
+          takerBuyQuote: Number(k[10])
+        }));
+
+        const closedCandles = candles.slice(0, -1);
+        const closes = closedCandles.map(c => c.close);
+        const volumes = closedCandles.map(c => c.volume);
+        const lastPrice = Number(ticker24h.lastPrice);
+
+        // Indicators on Closed Candles
+        const ema7Arr  = calcEMA(closes, 7);
+        const ema25Arr = calcEMA(closes, 25);
+        const ema99Arr = calcEMA(closes, 99);
+        const vwapArr  = calcVWAP(closedCandles);
+
+        const curEma7  = ema7Arr[ema7Arr.length - 1];
+        const curEma25 = ema25Arr[ema25Arr.length - 1];
+        const curEma99 = ema99Arr[ema99Arr.length - 1];
+        const curVwap  = vwapArr[vwapArr.length - 1];
+
+        const rsi6  = calcRSI(closes, 6);
+        const rsi12 = calcRSI(closes, 12);
+        const rsi24 = calcRSI(closes, 24);
+
+        const volMa5  = calcSMA(volumes, 5);
+        const volMa10 = calcSMA(volumes, 10);
+        const curVol  = volumes[volumes.length - 1];
+
+        // Support & Resistance (20-period Swing High / Low)
+        const recent20 = closedCandles.slice(-20);
+        const swingHigh = Math.max(...recent20.map(c => c.high));
+        const swingLow  = Math.min(...recent20.map(c => c.low));
+
+        // Momentum Calculations
+        const lookbackShort = Math.min(3, closedCandles.length - 1);
+        const shortMomPct = ((lastPrice - closedCandles[closedCandles.length - lookbackShort].close) / closedCandles[closedCandles.length - lookbackShort].close) * 100;
+
+        const closes1h = klines1h.map(k => Number(k[4]));
+        const mom1hPct = closes1h.length >= 2 ? ((lastPrice - closes1h[closes1h.length - 2]) / closes1h[closes1h.length - 2]) * 100 : 0;
+
+        // OI Change (1H)
+        let oiChangePct = 0;
+        if (oiHist && oiHist.length >= 2) {
+          const firstOI = Number(oiHist[0].sumOpenInterestValue);
+          const lastOI  = Number(oiHist[oiHist.length - 1].sumOpenInterestValue);
+          if (firstOI > 0) oiChangePct = ((lastOI - firstOI) / firstOI) * 100;
+        }
+
+        // Long/Short Ratio
+        let longPct = 50.0;
+        if (lsRatio && lsRatio.length > 0) {
+          longPct = Number(lsRatio[lsRatio.length - 1].longAccount) * 100;
+        }
+
+        // Aggressive Buy / Sell Taker Pressure over last 12 candles
+        const recent12 = candles.slice(-12);
+        let buyNotional = 0, sellNotional = 0;
+        recent12.forEach(c => {
+          buyNotional += c.takerBuyQuote;
+          sellNotional += Math.max(0, c.quoteVol - c.takerBuyQuote);
+        });
+
+        // Update Chart Series
+        state.candleSeries.setData(candles);
+        state.ema7Series.setData(closedCandles.map((c, i) => ({ time: c.time, value: ema7Arr[i] })));
+        state.ema25Series.setData(closedCandles.map((c, i) => ({ time: c.time, value: ema25Arr[i] })));
+        state.ema99Series.setData(closedCandles.map((c, i) => ({ time: c.time, value: ema99Arr[i] })));
+        state.vwapSeries.setData(closedCandles.map((c, i) => ({ time: c.time, value: vwapArr[i] })));
+
+        // Update DOM Metrics & Gauges
+        updateDashboardUI({
+          symbol,
+          lastPrice,
+          priceChange24h: Number(ticker24h.priceChangePercent),
+          quoteVolume24h: Number(ticker24h.quoteVolume),
+          markPrice: Number(premiumIdx.markPrice),
+          indexPrice: Number(premiumIdx.indexPrice),
+          fundingRate: Number(premiumIdx.lastFundingRate) * 100,
+          shortMomPct,
+          mom1hPct,
+          oiChangePct,
+          longPct,
+          rsi6, rsi12, rsi24,
+          curEma7, curEma25, curEma99, curVwap,
+          curVol, volMa5, volMa10,
+          swingHigh, swingLow,
+          buyNotional, sellNotional,
+          closes1h
+        });
+
+        connectLiveWebSocket(symbol, state.timeframe);
+
+      } catch (err) {
+        showError(`Failed to analyze ${symbol}: ${err.message}`);
+      } finally {
+        document.getElementById('analyzeBtn').textContent = 'Analyze';
+      }
+    }
+
+    /*************************************************************************
+     * UI UPDATER & 25-POINT SCORING SYSTEM
+     *************************************************************************/
+    function updateDashboardUI(d) {
+      // Contract Spec
+      const spec = state.symbolsMap[d.symbol];
+      if (spec) {
+        const tick = spec.filters.find(f => f.filterType === 'PRICE_FILTER')?.tickSize || '0.01';
+        document.getElementById('contractSpecText').textContent = `Perpetual • Tick ${parseFloat(tick)}`;
+      }
+
+      document.getElementById('activeSymbolLabel').textContent = d.symbol;
+      document.getElementById('lastUpdatedTime').textContent = new Date().toLocaleTimeString();
+      document.getElementById('chartTitle').textContent = `${d.symbol} • ${state.timeframe} Scalping Chart`;
+      document.getElementById('rsiTfLabel').textContent = state.timeframe.toUpperCase();
+
+      // Price & Sparkline
+      const priceEl = document.getElementById('lastPriceDisplay');
+      priceEl.textContent = `$${fmtPrice(d.lastPrice)}`;
+      priceEl.className = `text-3xl font-extrabold mono mt-1 ${d.priceChange24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+      const chgEl = document.getElementById('priceChange24hDisplay');
+      chgEl.textContent = `${d.priceChange24h >= 0 ? '+' : ''}${d.priceChange24h.toFixed(2)}% 24h`;
+      chgEl.className = `text-xs mono font-semibold mt-1 ${d.priceChange24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+      document.getElementById('markPriceDisplay').textContent = `$${fmtPrice(d.markPrice)}`;
+      document.getElementById('indexPriceDisplay').textContent = `$${fmtPrice(d.indexPrice)}`;
+
+      // Sparkline SVG
+      if (d.closes1h && d.closes1h.length > 2) {
+        const slice = d.closes1h.slice(-12);
+        const min = Math.min(...slice), max = Math.max(...slice) || min + 1;
+        const pts = slice.map((val, idx) => {
+          const x = (idx / (slice.length - 1)) * 110;
+          const y = 35 - ((val - min) / (max - min || 1)) * 30;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const poly = document.querySelector('#miniSparkline polyline');
+        poly.setAttribute('points', pts);
+        poly.setAttribute('stroke', d.priceChange24h >= 0 ? '#10b981' : '#ef4444');
+      }
+
+      // 6 Metric Cards
+      document.getElementById('metricVol24h').textContent = fmtCompactUSD(d.quoteVolume24h);
+      document.getElementById('momShortTitle').textContent = `${state.timeframe.toUpperCase()} MOMENTUM`;
+      
+      const momShortEl = document.getElementById('metricMomShort');
+      momShortEl.textContent = `${d.shortMomPct >= 0 ? '+' : ''}${d.shortMomPct.toFixed(2)}%`;
+      momShortEl.className = `text-2xl font-bold mono mt-2 ${d.shortMomPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+      document.getElementById('metricMomShortSub').textContent = d.shortMomPct >= 0 ? 'Short-term bullish' : 'Short-term bearish';
+
+      const mom1hEl = document.getElementById('metricMom1h');
+      mom1hEl.textContent = `${d.mom1hPct >= 0 ? '+' : ''}${d.mom1hPct.toFixed(2)}%`;
+      mom1hEl.className = `text-2xl font-bold mono mt-2 ${d.mom1hPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+      document.getElementById('metricMom1hSub').textContent = d.mom1hPct >= 0 ? '1H trend bullish' : '1H trend bearish';
+
+      const fundEl = document.getElementById('metricFunding');
+      fundEl.textContent = `${d.fundingRate.toFixed(4)}%`;
+      fundEl.className = `text-2xl font-bold mono mt-2 ${d.fundingRate > 0.02 ? 'text-red-400' : d.fundingRate < 0 ? 'text-emerald-400' : 'text-amber-400'}`;
+      document.getElementById('metricFundingSub').textContent = d.fundingRate >= 0 ? 'Longs paying shorts' : 'Shorts paying longs';
+
+      const oiEl = document.getElementById('metricOIChange');
+      oiEl.textContent = `${d.oiChangePct >= 0 ? '+' : ''}${d.oiChangePct.toFixed(2)}%`;
+      oiEl.className = `text-2xl font-bold mono mt-2 ${d.oiChangePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+      document.getElementById('metricOISub').textContent = d.oiChangePct >= 0 ? 'New money entering' : 'Positions closing';
+
+      const longEl = document.getElementById('metricLongPct');
+      longEl.textContent = `${d.longPct.toFixed(1)}%`;
+      longEl.className = `text-2xl font-bold mono mt-2 ${d.longPct > 60 ? 'text-red-400' : d.longPct < 45 ? 'text-emerald-400' : 'text-amber-400'}`;
+      document.getElementById('metricLongSub').textContent = d.longPct > 60 ? 'Crowd is long = watch squeeze' : d.longPct < 45 ? 'Crowd is short = squeeze up' : 'Balanced positioning';
+
+      // RSI Gauge (Needle -90deg to +90deg)
+      const rsiAngle = ((d.rsi12 - 50) / 50) * 85;
+      document.getElementById('rsiNeedle').style.transform = `rotate(${rsiAngle}deg)`;
+      document.getElementById('rsiMainValue').textContent = d.rsi12.toFixed(1);
+      document.getElementById('rsi6Val').textContent = d.rsi6.toFixed(1);
+      document.getElementById('rsi12Val').textContent = d.rsi12.toFixed(1);
+      document.getElementById('rsi24Val').textContent = d.rsi24.toFixed(1);
+
+      const rsiBadge = document.getElementById('rsiZoneBadge');
+      if (d.rsi12 < 32) {
+        rsiBadge.textContent = 'Oversold (Buy zone)';
+        rsiBadge.className = 'px-2.5 py-0.5 rounded-full text-xs mono bg-emerald-500/20 text-emerald-400';
+      } else if (d.rsi12 > 68) {
+        rsiBadge.textContent = 'Overbought (Sell zone)';
+        rsiBadge.className = 'px-2.5 py-0.5 rounded-full text-xs mono bg-red-500/20 text-red-400';
+      } else {
+        rsiBadge.textContent = 'Neutral zone';
+        rsiBadge.className = 'px-2.5 py-0.5 rounded-full text-xs mono bg-slate-800 text-slate-300';
+      }
+
+      // Orderflow Pressure
+      document.getElementById('sellPressureVal').textContent = fmtCompactUSD(d.sellNotional);
+      document.getElementById('buyPressureVal').textContent = fmtCompactUSD(d.buyNotional);
+      const totalFlow = d.sellNotional + d.buyNotional || 1;
+      document.getElementById('sellPressureBar').style.width = `${(d.sellNotional / totalFlow) * 100}%`;
+      document.getElementById('buyPressureBar').style.width = `${(d.buyNotional / totalFlow) * 100}%`;
+
+      // Chart Legend Values
+      document.getElementById('legEma7').textContent  = fmtPrice(d.curEma7);
+      document.getElementById('legEma25').textContent = fmtPrice(d.curEma25);
+      document.getElementById('legEma99').textContent = fmtPrice(d.curEma99);
+      document.getElementById('legVwap').textContent  = fmtPrice(d.curVwap);
+      document.getElementById('volMa5Text').textContent  = d.volMa5.toFixed(1);
+      document.getElementById('volMa10Text').textContent = d.volMa10.toFixed(1);
+      document.getElementById('srLevelsText').textContent = `$${fmtPrice(d.swingLow)} / $${fmtPrice(d.swingHigh)}`;
+
+      // Determine Primary Directional Bias (Bullish vs Bearish)
+      let bullVotes = 0, bearVotes = 0;
+      if (d.curEma7 > d.curEma25) bullVotes++; else bearVotes++;
+      if (d.lastPrice > d.curVwap) bullVotes++; else bearVotes++;
+      if (d.shortMomPct > 0) bullVotes++; else bearVotes++;
+      if (d.mom1hPct > 0) bullVotes++; else bearVotes++;
+      if (d.buyNotional > d.sellNotional) bullVotes++; else bearVotes++;
+
+      const isBullBias = bullVotes >= bearVotes;
+
+      // Evaluate 9 Signals (Max 25 Points)
+      const signals = [];
+
+      // 1. EMA Ribbon Alignment (4 pts)
+      const emaAligned = isBullBias
+        ? (d.curEma7 > d.curEma25 && d.curEma25 > d.curEma99)
+        : (d.curEma7 < d.curEma25 && d.curEma25 < d.curEma99);
+      const emaPartial = isBullBias ? (d.curEma7 > d.curEma25) : (d.curEma7 < d.curEma25);
+      const pts1 = emaAligned ? 4 : (emaPartial ? 2 : 0);
+      signals.push({
+        label: `EMA 7/25/99 ${emaAligned ? 'full trend stack' : emaPartial ? 'short crossover' : 'choppy/flat'}`,
+        pts: pts1, max: 4
+      });
+
+      // 2. RSI Multi-Period Setup (3 pts)
+      const rsiGood = isBullBias
+        ? (d.rsi12 >= 30 && d.rsi12 <= 65 && d.rsi6 > d.rsi24)
+        : (d.rsi12 <= 70 && d.rsi12 >= 35 && d.rsi6 < d.rsi24);
+      const pts2 = rsiGood ? 3 : (d.rsi12 < 35 || d.rsi12 > 65 ? 2 : 0);
+      signals.push({
+        label: `RSI ${d.rsi12.toFixed(1)} — ${rsiGood ? 'momentum aligned' : 'neutral/extended'}`,
+        pts: pts2, max: 3
+      });
+
+      // 3. VWAP Institutional Bias (3 pts)
+      const vwapAligned = isBullBias ? (d.lastPrice > d.curVwap) : (d.lastPrice < d.curVwap);
+      const pts3 = vwapAligned ? 3 : 0;
+      signals.push({
+        label: `Price ${ d.lastPrice > d.curVwap ? 'above' : 'below'} session VWAP ($${fmtPrice(d.curVwap)})`,
+        pts: pts3, max: 3
+      });
+
+      // 4. Short-Term Scalping Momentum (3 pts)
+      const shortAligned = isBullBias ? (d.shortMomPct > 0.08) : (d.shortMomPct < -0.08);
+      const pts4 = shortAligned ? 3 : 0;
+      signals.push({
+        label: `${state.timeframe} momentum: ${d.shortMomPct >= 0 ? '+' : ''}${d.shortMomPct.toFixed(2)}%`,
+        pts: pts4, max: 3
+      });
+
+      // 5. Higher-Timeframe 1H Confirmation (3 pts)
+      const htfAligned = isBullBias ? (d.mom1hPct > 0.15) : (d.mom1hPct < -0.15);
+      const pts5 = htfAligned ? 3 : 0;
+      signals.push({
+        label: `1H HTF momentum: ${d.mom1hPct >= 0 ? '+' : ''}${d.mom1hPct.toFixed(2)}%`,
+        pts: pts5, max: 3
+      });
+
+      // 6. Volume Expansion & Liquidity (3 pts)
+      const volSpike = d.curVol > d.volMa5 && d.volMa5 > d.volMa10;
+      const highLiq = d.quoteVolume24h > 150000000;
+      const pts6 = volSpike && highLiq ? 3 : (highLiq ? 2 : 0);
+      signals.push({
+        label: `Volume ${volSpike ? 'breakout > MA5/MA10' : 'normal'}: ${fmtCompactUSD(d.quoteVolume24h)} 24h`,
+        pts: pts6, max: 3
+      });
+
+      // 7. Funding Rate Health (2 pts)
+      const fundHealthy = isBullBias ? (d.fundingRate < 0.015) : (d.fundingRate > -0.015);
+      const pts7 = fundHealthy ? 2 : 0;
+      signals.push({
+        label: `Funding rate: ${d.fundingRate.toFixed(4)}% (${fundHealthy ? 'favorable' : 'crowded'})`,
+        pts: pts7, max: 2
+      });
+
+      // 8. Open Interest Flow (2 pts)
+      const oiRising = d.oiChangePct > 0.05;
+      const pts8 = oiRising ? 2 : 0;
+      signals.push({
+        label: `OI change: ${d.oiChangePct >= 0 ? '+' : ''}${d.oiChangePct.toFixed(2)}% (${oiRising ? 'fresh inflow' : 'flat/outflow'})`,
+        pts: pts8, max: 2
+      });
+
+      // 9. Taker Orderflow & Crowd Positioning (2 pts)
+      const flowAligned = isBullBias ? (d.buyNotional > d.sellNotional * 1.05) : (d.sellNotional > d.buyNotional * 1.05);
+      const pts9 = flowAligned ? 2 : 0;
+      signals.push({
+        label: `Orderflow ${flowAligned ? 'confirming' : 'mixed'} (${d.longPct.toFixed(0)}% accounts long)`,
+        pts: pts9, max: 2
+      });
+
+      const totalScore = signals.reduce((sum, s) => sum + s.pts, 0);
+
+      // Update Score Gauge
+      document.getElementById('scoreValueText').textContent = totalScore;
+      document.getElementById('breakdownTotalPts').textContent = `${totalScore} / 25 pts`;
+      const circumference = 414.69;
+      const offset = circumference - (totalScore / 25) * circumference;
+      const ringEl = document.getElementById('scoreRingCircle');
+      ringEl.style.strokeDashoffset = offset;
+
+      const badgeEl = document.getElementById('signalStrengthBadge');
+      if (totalScore >= 18) {
+        badgeEl.textContent = 'STRONG SIGNAL';
+        badgeEl.className = 'px-3 py-1 rounded-full text-xs mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mb-4';
+        ringEl.style.stroke = '#10b981';
+        document.getElementById('scoreValueText').className = 'text-5xl font-extrabold text-emerald-400';
+      } else if (totalScore >= 13) {
+        badgeEl.textContent = 'GOOD SIGNAL';
+        badgeEl.className = 'px-3 py-1 rounded-full text-xs mono font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 mb-4';
+        ringEl.style.stroke = '#eab308';
+        document.getElementById('scoreValueText').className = 'text-5xl font-extrabold text-yellow-400';
+      } else if (totalScore >= 7) {
+        badgeEl.textContent = 'WEAK SIGNAL';
+        badgeEl.className = 'px-3 py-1 rounded-full text-xs mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 mb-4';
+        ringEl.style.stroke = '#f59e0b';
+        document.getElementById('scoreValueText').className = 'text-5xl font-extrabold text-amber-400';
+      } else {
+        badgeEl.textContent = 'NO SIGNAL';
+        badgeEl.className = 'px-3 py-1 rounded-full text-xs mono font-bold bg-red-500/15 text-red-400 border border-red-500/30 mb-4';
+        ringEl.style.stroke = '#ef4444';
+        document.getElementById('scoreValueText').className = 'text-5xl font-extrabold text-red-400';
+      }
+
+      // Render Breakdown Rows (Screenshot 3 style)
+      const listEl = document.getElementById('signalBreakdownList');
+      listEl.innerHTML = signals.map(s => {
+        const active = s.pts > 0;
+        const barColor = s.pts === s.max ? 'bg-emerald-400' : (active ? 'bg-amber-400' : 'bg-slate-700');
+        const ptsColor = s.pts === s.max ? 'text-emerald-400' : (active ? 'text-amber-400' : 'text-slate-500');
+        return `
+          <div class="p-3.5 rounded-xl bg-[#111622] border border-[#1f283a] flex items-center justify-between gap-3 mono text-xs">
+            <div class="flex items-center gap-3">
+              ${active
+                ? `<span class="text-emerald-400 font-bold">✓</span>`
+                : `<span class="w-3.5 h-3.5 rounded-full border border-slate-600 inline-block"></span>`
+              }
+              <span class="${active ? 'text-slate-200' : 'text-slate-400'}">${s.label}</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <div class="w-12 h-1 bg-slate-800 rounded-full overflow-hidden hidden sm:block">
+                <div class="${barColor} h-full" style="width: ${(s.pts / s.max) * 100}%"></div>
+              </div>
+              <span class="font-bold ${ptsColor}">+${s.pts} pts</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Generate Actionable Futures Scalping Signal (LONG / SHORT / WAIT)
+      generateScalpingSetup(d, totalScore, isBullBias, signals);
+    }
+
+    function generateScalpingSetup(d, score, isBullBias, signals) {
+      const now = new Date();
+      const tfMinutes = { '1m': 15, '3m': 20, '5m': 30, '15m': 45, '30m': 60, '1h': 60 }[state.timeframe] || 30;
+      const exp = new Date(now.getTime() + tfMinutes * 60000);
+
+      document.getElementById('sigTimestamp').textContent = now.toLocaleTimeString();
+      document.getElementById('sigExpiration').textContent = exp.toLocaleTimeString();
+      document.getElementById('sigHoldDuration').textContent = `Est. Hold: ${Math.max(5, Math.floor(tfMinutes / 2))}–${tfMinutes} mins`;
+
+      const card = document.getElementById('scalpSignalCard');
+      const dirBadge = document.getElementById('sigDirectionBadge');
+
+      // Volatility buffer based on recent swing range
+      const rangePct = Math.max(0.0025, Math.min(0.015, (d.swingHigh - d.swingLow) / d.lastPrice * 0.6));
+
+      if (score >= 13) {
+        const direction = isBullBias ? 'LONG' : 'SHORT';
+        const slDist = d.lastPrice * rangePct;
+        const tp1Dist = slDist * 1.5;
+        const tp2Dist = slDist * 2.4;
+
+        const entryLow  = isBullBias ? d.lastPrice * 0.9992 : d.lastPrice * 0.9995;
+        const entryHigh = isBullBias ? d.lastPrice * 1.0005 : d.lastPrice * 1.0008;
+        const stopLoss  = isBullBias ? d.lastPrice - slDist : d.lastPrice + slDist;
+        const tp1       = isBullBias ? d.lastPrice + tp1Dist : d.lastPrice - tp1Dist;
+        const tp2       = isBullBias ? d.lastPrice + tp2Dist : d.lastPrice - tp2Dist;
+
+        state.lastSignal = { entry: d.lastPrice, stop: stopLoss, target: tp2 };
+
+        if (direction === 'LONG') {
+          card.className = 'card-inner p-5 border-l-4 border-l-emerald-500';
+          dirBadge.textContent = `LONG — BULLISH SCALP (${score}/25 PTS)`;
+          dirBadge.className = 'px-3 py-1 rounded-lg font-extrabold mono text-sm bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+        } else {
+          card.className = 'card-inner p-5 border-l-4 border-l-red-500';
+          dirBadge.textContent = `SHORT — BEARISH SCALP (${score}/25 PTS)`;
+          dirBadge.className = 'px-3 py-1 rounded-lg font-extrabold mono text-sm bg-red-500/20 text-red-400 border border-red-500/40';
+        }
+
+        document.getElementById('sigEntryZone').textContent = `$${fmtPrice(entryLow)} – $${fmtPrice(entryHigh)}`;
+        document.getElementById('sigStopLoss').textContent  = `$${fmtPrice(stopLoss)}`;
+        document.getElementById('sigTakeProfit').textContent = `$${fmtPrice(tp1)} / $${fmtPrice(tp2)}`;
+        document.getElementById('sigRiskReward').textContent = `1 : 1.5 / 1 : 2.4`;
+
+        const activeReasons = signals.filter(s => s.pts > 0).map(s => s.label).slice(0, 4).join(' • ');
+        document.getElementById('sigReasonsText').textContent = activeReasons;
+        document.getElementById('sigInvalidationText').textContent = isBullBias
+          ? `5m candle close below Stop-Loss ($${fmtPrice(stopLoss)}) or loss of VWAP ($${fmtPrice(d.curVwap)}).`
+          : `5m candle close above Stop-Loss ($${fmtPrice(stopLoss)}) or reclaim of VWAP ($${fmtPrice(d.curVwap)}).`;
+
+      } else {
+        // WAIT State when score < 13
+        card.className = 'card-inner p-5 border-l-4 border-l-amber-500';
+        dirBadge.textContent = `WAIT — INSUFFICIENT CONFLUENCE (${score}/25 PTS)`;
+        dirBadge.className = 'px-3 py-1 rounded-lg font-extrabold mono text-sm bg-amber-500/20 text-amber-400 border border-amber-500/40';
+
+        document.getElementById('sigEntryZone').textContent = `Standby (Ref: $${fmtPrice(d.lastPrice)})`;
+        document.getElementById('sigStopLoss').textContent  = `N/A (Wait for ≥13 pts)`;
+        document.getElementById('sigTakeProfit').textContent = `N/A`;
+        document.getElementById('sigRiskReward').textContent = `--`;
+        document.getElementById('sigReasonsText').textContent = `Score is ${score}/25 pts (requires ≥13 pts). Market indicators are conflicting or lacking volume confirmation.`;
+        document.getElementById('sigInvalidationText').textContent = `Do not force a trade until EMA 7/25, VWAP ($${fmtPrice(d.curVwap)}), and RSI align.`;
+      }
+    }
+
+    /*************************************************************************
+     * LIVE WEBSOCKET STREAM (REAL-TIME CANDLE & PRICE UPDATES)
+     *************************************************************************/
+    function connectLiveWebSocket(symbol, interval) {
+      if (state.ws) {
+        state.ws.onclose = null;
+        state.ws.close();
+      }
+      const streamName = `${symbol.toLowerCase()}@kline_${interval}`;
+      const ws = new WebSocket(`${FAPI_WS}/${streamName}`);
+      state.ws = ws;
+
+      ws.onopen = () => {
+        document.getElementById('connStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+        document.getElementById('connStatusText').textContent = `LIVE STREAM: ${symbol} (${interval})`;
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (!msg.k) return;
+        const k = msg.k;
+        const closePrice = Number(k.c);
+        document.getElementById('lastPriceDisplay').textContent = `$${fmtPrice(closePrice)}`;
+        document.getElementById('lastUpdatedTime').textContent = new Date().toLocaleTimeString();
+
+        if (state.candleSeries) {
+          state.candleSeries.update({
+            time: Math.floor(k.t / 1000),
+            open: Number(k.o),
+            high: Number(k.h),
+            low: Number(k.l),
+            close: closePrice
+          });
+        }
+      };
+
+      ws.onerror = () => {
+        document.getElementById('connStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+      };
+
+      ws.onclose = () => {
+        document.getElementById('connStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+        document.getElementById('connStatusText').textContent = 'STREAM DISCONNECTED';
+      };
+    }
+
+    /*************************************************************************
+     * MULTI-PAIR SCALPING SCANNER
+     *************************************************************************/
+    async function runScanner() {
+      const btn = document.getElementById('scanBtn');
+      const tbody = document.getElementById('scannerTableBody');
+      btn.textContent = 'Scanning Live Futures...';
+      tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-400">Fetching multi-pair klines & funding rates from Binance Futures...</td></tr>`;
+
+      const topPairs = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','SUIUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','LTCUSDT','DOTUSDT'];
+      try {
+        const [tickers, premiums] = await Promise.all([
+          fetchJSON(`${FAPI_REST}/fapi/v1/ticker/24hr`),
+          fetchJSON(`${FAPI_REST}/fapi/v1/premiumIndex`)
+        ]);
+        const tickerMap = Object.fromEntries(tickers.map(t => [t.symbol, t]));
+        const premMap   = Object.fromEntries(premiums.map(p => [p.symbol, p]));
+
+        const results = await Promise.all(topPairs.map(async sym => {
+          const klines = await fetchJSON(`${FAPI_REST}/fapi/v1/klines?symbol=${sym}&interval=${state.timeframe}&limit=60`);
+          const candles = klines.slice(0, -1).map(k => ({
+            high: Number(k[2]), low: Number(k[3]), close: Number(k[4]), volume: Number(k[5])
+          }));
+          const closes = candles.map(c => c.close);
+          const last = Number(tickerMap[sym]?.lastPrice || closes[closes.length - 1]);
+          const chg24 = Number(tickerMap[sym]?.priceChangePercent || 0);
+          const fund = Number(premMap[sym]?.lastFundingRate || 0) * 100;
+          const ema7 = calcEMA(closes, 7).pop();
+          const ema25 = calcEMA(closes, 25).pop();
+          const rsi12 = calcRSI(closes, 12);
+          const vwap = calcVWAP(candles).pop();
+
+          let score = 0;
+          const bull = ema7 > ema25 && last > vwap;
+          const bear = ema7 < ema25 && last < vwap;
+          if (ema7 > ema25 || ema7 < ema25) score += 5;
+          if ((bull && rsi12 > 45 && rsi12 < 68) || (bear && rsi12 < 55 && rsi12 > 32)) score += 6;
+          if ((bull && chg24 > 0) || (bear && chg24 < 0)) score += 5;
+          if (Math.abs(fund) < 0.02) score += 4;
+          if (Number(tickerMap[sym]?.quoteVolume || 0) > 100000000) score += 5;
+
+          const sig = score >= 15 ? (bull ? 'LONG' : (bear ? 'SHORT' : 'WAIT')) : 'WAIT';
+          return { sym, last, chg24, rsi12, vwapBias: last > vwap ? 'Above' : 'Below', fund, score, sig };
+        }));
+
+        results.sort((a, b) => b.score - a.score);
+        tbody.innerHTML = results.map(r => `
+          <tr class="hover:bg-[#141b29] transition">
+            <td class="py-3 px-3 font-bold text-white">${r.sym}</td>
+            <td class="py-3 px-3">$${fmtPrice(r.last)}</td>
+            <td class="py-3 px-3 ${r.chg24 >= 0 ? 'text-emerald-400' : 'text-red-400'}">${r.chg24 >= 0 ? '+' : ''}${r.chg24.toFixed(2)}%</td>
+            <td class="py-3 px-3">${r.rsi12.toFixed(1)}</td>
+            <td class="py-3 px-3 ${r.vwapBias === 'Above' ? 'text-emerald-400' : 'text-red-400'}">${r.vwapBias} VWAP</td>
+            <td class="py-3 px-3">${r.fund.toFixed(4)}%</td>
+            <td class="py-3 px-3 font-bold text-amber-400">${r.score} / 25</td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold ${r.sig === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : r.sig === 'SHORT' ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-400'}">
+                ${r.sig}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right">
+              <button onclick="selectQuickSymbol('${r.sym}'); switchTab('analyze');" class="px-2.5 py-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition">
+                Inspect →
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        showError(`Scanner Error: ${e.message}`);
+      } finally {
+        btn.textContent = '⚡ Scan Top 15 Liquid Pairs Now';
+      }
+    }
+
+    /*************************************************************************
+     * WATCHLIST MANAGEMENT
+     *************************************************************************/
+    function updateWatchButtonUI() {
+      const btn = document.getElementById('watchToggleBtn');
+      const inList = state.watchlist.includes(state.symbol);
+      btn.textContent = inList ? '★ Watched' : '☆ Watch';
+      btn.className = inList
+        ? 'px-3 py-1 rounded-full text-xs mono border border-amber-500/50 bg-amber-500/10 text-amber-400 transition'
+        : 'px-3 py-1 rounded-full text-xs mono border border-[#29344d] text-slate-300 hover:border-blue-500 transition';
+      document.getElementById('watchCountBadge').textContent = state.watchlist.length;
+    }
+
+    function toggleWatchlistCurrent() {
+      const idx = state.watchlist.indexOf(state.symbol);
+      if (idx >= 0) state.watchlist.splice(idx, 1);
+      else state.watchlist.push(state.symbol);
+      localStorage.setItem('argon4_watchlist', JSON.stringify(state.watchlist));
+      updateWatchButtonUI();
+      refreshWatchlist();
+    }
+
+    async function refreshWatchlist() {
+      const grid = document.getElementById('watchlistGrid');
+      document.getElementById('watchCountBadge').textContent = state.watchlist.length;
+      if (state.watchlist.length === 0) {
+        grid.innerHTML = `<div class="col-span-3 text-center py-8 text-slate-500 mono text-xs">No pairs in watchlist. Click "☆ Watch" on any pair to save it.</div>`;
+        return;
+      }
+      try {
+        const tickers = await fetchJSON(`${FAPI_REST}/fapi/v1/ticker/24hr`);
+        const map = Object.fromEntries(tickers.map(t => [t.symbol, t]));
+        grid.innerHTML = state.watchlist.map(sym => {
+          const t = map[sym];
+          if (!t) return '';
+          const chg = Number(t.priceChangePercent);
+          return `
+            <div class="card-inner p-4 flex items-center justify-between">
+              <div>
+                <div class="font-bold mono text-white text-sm">${sym}</div>
+                <div class="text-lg font-extrabold mono mt-1">$${fmtPrice(t.lastPrice)}</div>
+                <div class="text-xs mono ${chg >= 0 ? 'text-emerald-400' : 'text-red-400'}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% 24h</div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button onclick="selectQuickSymbol('${sym}'); switchTab('analyze');" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs mono font-bold">
+                  Analyze
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        showError(`Watchlist Error: ${e.message}`);
+      }
+    }
+
+    /*************************************************************************
+     * RISK MANAGEMENT CALCULATOR
+     *************************************************************************/
+    function calculateRisk() {
+      const balance  = Number(document.getElementById('rcBalance').value) || 0;
+      const riskPct  = Number(document.getElementById('rcRiskPct').value) || 0;
+      const entry    = Number(document.getElementById('rcEntry').value) || 0;
+      const stop     = Number(document.getElementById('rcStop').value) || 0;
+      const target   = Number(document.getElementById('rcTarget').value) || 0;
+      const leverage = Math.max(1, Number(document.getElementById('rcLeverage').value) || 1);
+      const feePct   = (Number(document.getElementById('rcFeePct').value) || 0) / 100;
+
+      const stopDiff = Math.abs(entry - stop);
+      if (entry <= 0 || stopDiff <= 0) return;
+
+      const riskUSD  = balance * (riskPct / 100);
+      const units    = riskUSD / stopDiff;
+      const notional = units * entry;
+      const margin   = notional / leverage;
+      const estFees  = notional * feePct;
+
+      const grossProfit = units * Math.abs(target - entry);
+      const netLoss     = riskUSD + estFees;
+      const netProfit   = Math.max(0, grossProfit - estFees);
+      const rr          = netLoss > 0 ? (netProfit / netLoss) : 0;
+
+      const isLong = entry > stop;
+      const liqPrice = isLong
+        ? entry * (1 - (1 / leverage) + 0.004)
+        : entry * (1 + (1 / leverage) - 0.004);
+
+      document.getElementById('rcOutUnits').textContent    = units.toFixed(4);
+      document.getElementById('rcOutNotional').textContent = `$${notional.toFixed(2)}`;
+      document.getElementById('rcOutMargin').textContent   = `$${margin.toFixed(2)}`;
+      document.getElementById('rcOutLiq').textContent      = `$${fmtPrice(Math.max(0, liqPrice))}`;
+      document.getElementById('rcOutLoss').textContent     = `-$${netLoss.toFixed(2)}`;
+      document.getElementById('rcOutProfit').textContent   = `+$${netProfit.toFixed(2)}`;
+      document.getElementById('rcOutRR').textContent       = `1 : ${rr.toFixed(2)}`;
+    }
+
+    function sendSignalToRiskCalc() {
+      if (state.lastSignal) {
+        document.getElementById('rcEntry').value  = state.lastSignal.entry;
+        document.getElementById('rcStop').value   = state.lastSignal.stop.toFixed(4);
+        document.getElementById('rcTarget').value = state.lastSignal.target.toFixed(4);
+        calculateRisk();
+      }
+      switchTab('risk');
+    }
+
+    /*************************************************************************
+     * NAVIGATION, HELPERS & SINGLE-FILE SELF-DOWNLOADER
+     *************************************************************************/
+    function switchTab(tab) {
+      ['analyze', 'scanner', 'watch', 'risk'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === tab) {
+          btn.className = 'py-3.5 text-center border-b-2 border-blue-500 text-blue-400 bg-[#141a29] transition';
+        } else {
+          btn.className = 'py-3.5 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition';
+        }
+      });
+      if (tab === 'watch') refreshWatchlist();
+      if (tab === 'risk') calculateRisk();
+    }
+
+    function selectQuickSymbol(sym) {
+      document.getElementById('symbolInput').value = sym;
+      runFullAnalysis();
+    }
+
+    function changeTimeframe(tf) {
+      state.timeframe = tf;
+      document.querySelectorAll('.tf-btn').forEach(btn => {
+        btn.className = 'tf-btn px-3 py-2 rounded-lg text-slate-400 hover:text-white transition';
+      });
+      document.getElementById(`tf-${tf}`).className = 'tf-btn px-3 py-2 rounded-lg bg-blue-600 text-white font-bold transition';
+      runFullAnalysis();
+    }
+
+    function showError(msg) {
+      document.getElementById('errorBanner').classList.remove('hidden');
+      document.getElementById('errorMessage').textContent = msg;
+    }
+
+    function hideError() {
+      document.getElementById('errorBanner').classList.add('hidden');
+    }
+
+    function retryConnection() {
+      loadExchangeAndPulse();
+      runFullAnalysis();
+    }
+
+    function downloadSelf() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'argon4-binance-futures-analyzer.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      calculateRisk();
+      loadExchangeAndPulse();
+      runFullAnalysis();
+    });
+  </script>
+</body>
+</html>
