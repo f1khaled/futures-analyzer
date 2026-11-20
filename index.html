@@ -55,14 +55,14 @@ body{
 .num{font-variant-numeric:tabular-nums}
 
 /* Ambient liquid orbs */
-.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.38;animation:drift 26s var(--ease) infinite alternate}
-.orb.o1{width:520px;height:520px;left:-160px;top:-120px;background:radial-gradient(circle,#1b3cff 0%,transparent 70%)}
-.orb.o2{width:460px;height:460px;right:-140px;top:30%;background:radial-gradient(circle,#00c27a 0%,transparent 70%);animation-duration:32s;opacity:.22}
-.orb.o3{width:520px;height:520px;left:30%;bottom:-260px;background:radial-gradient(circle,#c2185b 0%,transparent 70%);animation-duration:38s;opacity:.22}
-@keyframes drift{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(60px,40px,0) scale(1.08)}100%{transform:translate3d(-40px,80px,0) scale(.95)}}
-body.bias-long .orb.o2{opacity:.42}
-body.bias-short .orb.o3{opacity:.42}
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;contain:strict}
+.orb{position:absolute;inset:0;transition:opacity 1.2s ease}
+.orb.o1{background:radial-gradient(520px 520px at 8% 4%,rgba(27,60,255,.30),transparent 70%)}
+.orb.o2{background:radial-gradient(480px 480px at 100% 45%,rgba(0,194,122,.16),transparent 70%)}
+.orb.o3{background:radial-gradient(560px 520px at 50% 108%,rgba(194,24,91,.16),transparent 70%)}
+.orb.o2,.orb.o3{opacity:.7}
+body.bias-long .orb.o2{opacity:1}
+body.bias-short .orb.o3{opacity:1}
 
 .app{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 
@@ -78,8 +78,7 @@ body.bias-short .orb.o3{opacity:.42}
 }
 .glass::before{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(120deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.05) 100%);
-  mix-blend-mode:overlay;
+  background:linear-gradient(120deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.025) 100%);
 }
 
 /* Top bar */
@@ -142,6 +141,7 @@ body.bias-short .orb.o3{opacity:.42}
 @keyframes spin{to{transform:rotate(360deg)}}
 .refresh-bar{position:absolute;left:18px;right:18px;bottom:0;height:2px;border-radius:2px;overflow:hidden;background:transparent}
 .refresh-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,transparent,var(--long));transition:width 1s linear}
+.refresh-bar i.reset{transition:none}
 
 /* Banner */
 .banner{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;margin-bottom:12px;border-radius:16px;background:rgba(255,51,102,.10);border:1px solid rgba(255,51,102,.35);color:#ffd5de;font-size:13px;animation:fadeUp .3s var(--ease)}
@@ -150,6 +150,13 @@ body.bias-short .orb.o3{opacity:.42}
 .banner .bx{margin-left:auto;flex:none}
 .banner button{appearance:none;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;border-radius:10px;padding:6px 12px;font:600 12px var(--font);cursor:pointer}
 .hidden{display:none !important}
+.grid.switching .card{opacity:.45;transition:opacity .2s}
+.grid .card{transition:opacity .25s}
+.note{margin-top:8px;font-size:11.5px;color:var(--warn)}
+.health{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 10px}
+.health span{font:600 10.5px var(--mono);padding:3px 8px;border-radius:99px;border:1px solid var(--border-soft);background:rgba(255,255,255,.03);color:var(--muted)}
+.health span.ok{color:var(--long);border-color:rgba(0,255,136,.25)}
+.health span.bad{color:var(--short);border-color:rgba(255,51,102,.3)}
 
 /* Grid */
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}
@@ -194,7 +201,6 @@ body.bias-short .orb.o3{opacity:.42}
 .gauge-num{text-align:center;margin-top:4px}
 .gauge-num .n{font:750 44px/1 var(--mono);letter-spacing:-.04em}
 .gauge-num .of{font-size:12px;color:var(--dim)}
-#needle{transition:transform 1s var(--ease);transform-origin:120px 120px}
 #gaugeArc{transition:stroke-dashoffset 1s var(--ease)}
 .sig-label{margin:10px auto 4px;text-align:center;font-size:24px;font-weight:800;letter-spacing:-.02em;padding:10px 18px;border-radius:16px;border:1px solid var(--border-soft);background:rgba(255,255,255,.04);transition:all .4s var(--ease)}
 .sig-label.strong-long{color:#04140b;background:linear-gradient(180deg,#6bffbc,#00e57a);border-color:transparent;box-shadow:0 10px 36px rgba(0,255,136,.4)}
@@ -210,7 +216,8 @@ body.bias-short .orb.o3{opacity:.42}
 .checks .ic.short{background:var(--short-soft);color:var(--short)}
 .checks .ic.neutral{background:rgba(255,255,255,.07);color:var(--muted)}
 .checks .ic.warn{background:var(--warn-soft);color:var(--warn)}
-.checks .val{font:600 12px var(--mono);color:var(--muted);text-align:right;white-space:nowrap}
+.checks .val{font:600 12px var(--mono);color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.checks li>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .insights{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 .insight{font-size:12.5px;padding:9px 11px;border-radius:12px;border:1px solid var(--border-soft);background:rgba(255,255,255,.03);color:#d8dce6}
 .insight.long{border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.06)}
@@ -232,7 +239,7 @@ body.bias-short .orb.o3{opacity:.42}
 .calc{margin-top:12px;padding:12px;border-radius:14px;background:rgba(0,0,0,.18);border:1px dashed var(--border-soft)}
 .calc-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .field label{display:block;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:4px}
-.field input{width:100%;height:40px;padding:0 10px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid var(--border-soft);color:var(--text);font:600 15px var(--mono);outline:0}
+.field input{width:100%;height:42px;padding:0 10px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid var(--border-soft);color:var(--text);font:600 16px var(--mono);outline:0;-webkit-appearance:none;appearance:none}
 .field input:focus{border-color:rgba(90,200,250,.55)}
 .calc-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin-top:10px;font-size:12.5px}
 .calc-out div{display:flex;justify-content:space-between;gap:8px}
@@ -315,6 +322,10 @@ footer a{color:var(--muted)}
 }
 @media (max-width:380px){
   .auto .lbl{display:none}
+  .lvl{gap:8px;padding:10px}
+  .lvl .k{min-width:0}
+  .lvl .v{font-size:13px;white-space:nowrap}
+  .lvl .d{min-width:0}
   .calc-out{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){
@@ -373,7 +384,7 @@ footer a{color:var(--muted)}
     <div class="bx"><button id="bannerRetry">Retry</button></div>
   </div>
 
-  <main class="grid">
+  <main class="grid" id="grid">
     <!-- HERO -->
     <section class="card glass span-8 hero" aria-label="Price overview">
       <div class="hero-top">
@@ -433,7 +444,7 @@ footer a{color:var(--muted)}
             <g font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#5d6578" text-anchor="middle">
               <text x="20" y="136">0</text><text x="120" y="12">50</text><text x="220" y="136">100</text>
             </g>
-            <g id="needle" style="transform:rotate(-90deg)">
+            <g id="needle" transform="rotate(-90 120 120)">
               <line x1="120" y1="120" x2="120" y2="40" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".9"/>
               <circle cx="120" cy="120" r="6" fill="#fff"/>
             </g>
@@ -517,6 +528,7 @@ footer a{color:var(--muted)}
   </main>
 
   <footer>
+    <div class="health" id="health" aria-label="API endpoint status"></div>
     Data: Binance USDⓈ-M Futures public REST API (<span class="mono">fapi.binance.com</span>) — no API keys, read-only.
     Signals are algorithmic confluence estimates for short-term analysis, not financial advice. Leveraged futures carry a high risk of loss.<br>
     Shortcuts: <span class="mono">/</span> search · <span class="mono">R</span> refresh · <span class="mono">1 2 3</span> timeframe
@@ -535,7 +547,7 @@ const TIMEFRAMES = ['5m', '15m', '1h'];
 const TF_MS = { '5m': 300000, '15m': 900000, '1h': 3600000 };
 const LOOKBACK = 6;                 // periods used for price / OI / taker delta windows
 const AUTO_INTERVAL = 15000;        // auto-refresh period (ms)
-const REQ_TIMEOUT = 10000;          // per-request timeout (ms)
+const REQ_TIMEOUT = 8000;           // per-request timeout (ms); one automatic retry on transient errors
 const KLINE_LIMIT = 300;            // enough history to warm up EMA50 + Wilder smoothing
 const FUNDING_EXTREME = 0.0005;     // 0.05 %
 const FUNDING_BASELINE = 0.0001;    // 0.01 % (Binance default interest component)
@@ -563,7 +575,14 @@ const state = {
   ddIndex: -1,
   ddItems: [],
   backoffUntil: 0,
+  universeOK: false,    // true once exchangeInfo loaded (enables strict symbol validation)
+  clockOffset: 0,       // Binance server time − local time (ms)
+  health: {},           // endpoint -> {ok, ms, msg}
+  needle: -90,
+  needleRaf: 0,
+  barCycle: 0,
 };
+const serverNow = () => Date.now() + state.clockOffset;
 
 /* ============================================================
    UTILITIES
@@ -642,7 +661,7 @@ function arrow(x) { return !isNum(x) ? '' : x > 0 ? '▲' : x < 0 ? '▼' : '■
 class ApiError extends Error {
   constructor(msg, status, kind) { super(msg); this.status = status; this.kind = kind; }
 }
-async function api(path, outerSignal) {
+async function apiOnce(path, outerSignal) {
   const ctrl = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, REQ_TIMEOUT);
@@ -676,6 +695,25 @@ async function api(path, outerSignal) {
     if (outerSignal) outerSignal.removeEventListener('abort', onAbort);
   }
 }
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(t); reject(new ApiError('Request cancelled', 0, 'abort')); }, { once: true });
+  });
+}
+/** GET with one automatic retry for transient failures (network, timeout, 5xx). */
+async function api(path, outerSignal, retries = 1) {
+  try {
+    return await apiOnce(path, outerSignal);
+  } catch (e) {
+    const transient = e.kind === 'network' || e.kind === 'timeout' || (e.kind === 'http' && e.status >= 500);
+    if (retries > 0 && transient && !(outerSignal && outerSignal.aborted)) {
+      await sleep(700, outerSignal);
+      return api(path, outerSignal, retries - 1);
+    }
+    throw e;
+  }
+}
 function explainError(err) {
   if (!err) return 'Unknown error.';
   switch (err.kind) {
@@ -684,7 +722,7 @@ function explainError(err) {
     case 'geo': return '<b>Binance Futures is not reachable from your location (' + err.status + ').</b> The public futures API is restricted in some regions (e.g. the US). A VPN to a supported region or another network may be required.';
     case 'timeout': return '<b>Request timed out.</b> Binance is slow or your connection is unstable.';
     case 'network': return '<b>Network error.</b> Could not reach fapi.binance.com — check your connection, content blockers, or regional restrictions.';
-    case 'bad': return '<b>Invalid request:</b> ' + esc(err.message) + '. The symbol may be delisted or not a USDⓈ-M perpetual.';
+    case 'bad': return '<b>Invalid request:</b> ' + esc(err.message.replace(/\.+$/, '')) + '. The symbol may be delisted or not a USDⓈ-M perpetual.';
     default: return '<b>API error:</b> ' + esc(err.message);
   }
 }
@@ -1067,7 +1105,7 @@ async function loadUniverse() {
       list.push(m);
       state.meta[s.symbol] = m;
     }
-    state.symbols = list;
+    if (list.length) { state.symbols = list; state.universeOK = true; }
   }
   if (tick.status === 'fulfilled' && Array.isArray(tick.value)) {
     for (const t of tick.value) state.tickers[t.symbol] = { last: +t.lastPrice, chg: +t.priceChangePercent, qv: +t.quoteVolume };
@@ -1107,13 +1145,30 @@ async function refresh({ force = false } = {}) {
   };
   for (const t of TIMEFRAMES) reqs['k' + t] = api(`/fapi/v1/klines?${q}&interval=${t}&limit=${KLINE_LIMIT}`, s);
   const keys = Object.keys(reqs);
-  const settled = await Promise.allSettled(keys.map(k => reqs[k]));
+  const t0 = performance.now();
+  const timings = {};
+  const wrapped = {};
+  for (const k of keys) wrapped[k] = reqs[k].finally(() => { timings[k] = performance.now() - t0; });
+  // Only the price + selected-timeframe candles are required. Secondary data gets at most
+  // 2.5 s after the required set settles, so one slow endpoint can never stall the whole update.
+  const required = new Set(['k' + tf, 'premium', 'ticker']);
+  const requiredDone = Promise.allSettled(keys.filter(k => required.has(k)).map(k => wrapped[k]));
+  const deadline = requiredDone.then(() => sleep(2500, s).catch(() => {}));
+  const settled = await Promise.allSettled(keys.map(k => required.has(k) ? wrapped[k]
+    : Promise.race([wrapped[k], deadline.then(() => { throw new ApiError('Too slow — skipped this cycle', 0, 'slow'); })])));
   if (seq !== state.reqSeq) return; // stale response — a newer request superseded this one
   state.inflight = false;
   $('refreshBtn').classList.remove('spin');
 
   const r = {}, errs = {};
   keys.forEach((k, i) => { if (settled[i].status === 'fulfilled') r[k] = settled[i].value; else errs[k] = settled[i].reason; });
+  keys.forEach(k => { state.health[k] = { ok: !errs[k], ms: timings[k], msg: errs[k] ? errs[k].message : '' }; });
+  renderHealth();
+  if (r.premium && isNum(+r.premium.time) && +r.premium.time > 0) {
+    // Estimate server clock offset (response time ≈ midpoint of the request)
+    const off = +r.premium.time - (Date.now() - (timings.premium || 0) / 2);
+    state.clockOffset = state.clockOffset === 0 ? off : state.clockOffset * 0.7 + off * 0.3;
+  }
 
   const primaryKey = 'k' + tf;
   if (!r[primaryKey] || (!r.premium && !r.ticker)) {
@@ -1123,12 +1178,13 @@ async function refresh({ force = false } = {}) {
     if (err && err.kind === 'banned') state.backoffUntil = Date.now() + 300000;
     showBanner(explainError(err) + (state.data && state.data.symbol === sym ? ' Showing the last successful data.' : ''), 'error');
     setStatus('error', 'Error');
+    if (!state.data || state.data.symbol !== sym) clearCards();
     scheduleNext();
     return;
   }
 
   try {
-    const now = Date.now();
+    const now = serverNow();
     const tfs = {};
     for (const t of TIMEFRAMES) if (r['k' + t]) tfs[t] = analyzeTF(r['k' + t], t, now);
     const primary = tfs[tf];
@@ -1154,14 +1210,13 @@ async function refresh({ force = false } = {}) {
     if (ticker) state.tickers[sym] = { last: ticker.last, chg: ticker.chg, qv: ticker.qv };
 
     renderAll();
-    const partial = ['oi', 'oiHist', 'taker'].filter(k => errs[k] && errs[k].kind !== 'abort');
-    if (partial.length) {
-      showBanner(`<b>Partial data:</b> ${partial.map(k => ({ oi: 'open interest', oiHist: 'OI history', taker: 'taker ratio' }[k])).join(', ')} unavailable (${esc(errs[partial[0]].message)}). Scores use the remaining metrics${taker && taker.source === 'klines' ? '; taker flow falls back to kline taker volume' : ''}.`, 'warn');
-    } else hideBanner();
-    setStatus('live', 'Live');
+    hideBanner(); // secondary-endpoint failures are reported inside their own cards + the API status row
+    const partial = ['oi', 'oiHist', 'taker'].some(k => errs[k] && errs[k].kind !== 'abort');
+    setStatus('live', partial ? 'Live · partial' : 'Live');
   } catch (e) {
     showBanner(explainError(e instanceof ApiError ? e : new ApiError(e.message || String(e), 0, 'data')), 'error');
     setStatus('error', 'Error');
+    if (!state.data || state.data.symbol !== sym) clearCards();
     console.error(e);
   }
   scheduleNext();
@@ -1170,6 +1225,44 @@ async function refresh({ force = false } = {}) {
 /* ============================================================
    RENDERING
    ============================================================ */
+const HEALTH_LABEL = { ticker: '24h', premium: 'mark/funding', oi: 'OI', oiHist: 'OI hist', taker: 'taker', k5m: 'klines 5m', k15m: 'klines 15m', k1h: 'klines 1h' };
+function renderHealth() {
+  const html = Object.keys(HEALTH_LABEL).filter(k => state.health[k]).map(k => {
+    const h = state.health[k];
+    return `<span class="${h.ok ? 'ok' : 'bad'}" title="${esc(h.ok ? 'OK' : h.msg)}">${h.ok ? '✓' : '✗'} ${HEALTH_LABEL[k]}${h.ok && isNum(h.ms) ? ' ' + Math.round(h.ms) + 'ms' : ''}</span>`;
+  }).join('');
+  $('health').innerHTML = html;
+}
+function clearCards() {
+  $('grid').classList.remove('switching');
+  const el = $('markPrice'); el.classList.remove('skeleton'); el.textContent = '—';
+  ['chg24', 'lastPrice', 'indexPrice', 'basis', 'hi24', 'lo24', 'vol24', 'rangePos', 'atrHero', 'riskR', 'slDist', 'updatedAt'].forEach(id => { $(id).textContent = '—'; });
+  $('chg24').className = 'chg';
+  $('symName').textContent = state.symbol;
+  $('tfTag').textContent = state.tf;
+  for (const id of ['oiBody', 'takerBody', 'fundBody', 'techBody', 'mtfBody', 'levels']) $(id).innerHTML = '<div class="na">No data for this pair.</div>';
+  for (const id of ['oiTag', 'takerTag', 'fundTag', 'emaTag', 'mtfTag', 'setupSide', 'regimeTag']) { $(id).className = 'tag'; $(id).textContent = '—'; }
+  $('checks').innerHTML = ''; $('insights').innerHTML = ''; $('calcOut').innerHTML = ''; $('setupNote').textContent = '';
+  $('sigLabel').className = 'sig-label neutral'; $('sigLabel').textContent = 'No data';
+  $('sigSub').textContent = state.symbol + ' · ' + state.tf;
+  $('scoreNum').textContent = '—'; $('scoreNum').style.color = '';
+  $('gaugeArc').style.strokeDashoffset = '314.16';
+  setNeedle(-90);
+  $('legendSetup').textContent = '';
+  document.body.classList.remove('bias-long', 'bias-short');
+  const cv = $('chart'); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+function setNeedle(target) {
+  const from = state.needle, t0 = performance.now(), dur = 900;
+  state.needle = target;
+  cancelAnimationFrame(state.needleRaf);
+  const step = t => {
+    const k = Math.min(1, Math.max(0, (t - t0) / dur)), e = 1 - Math.pow(1 - k, 3);
+    $('needle').setAttribute('transform', `rotate(${(from + (target - from) * e).toFixed(2)} 120 120)`);
+    if (k < 1) state.needleRaf = requestAnimationFrame(step);
+  };
+  state.needleRaf = requestAnimationFrame(step);
+}
 function setStatus(kind, text) {
   $('statusDot').className = 'dot ' + kind;
   $('statusText').textContent = text;
@@ -1198,6 +1291,7 @@ function renderAll() {
   renderTech(d);
   renderMTF(d);
   drawChart();
+  $('grid').classList.remove('switching');
   document.body.classList.toggle('bias-long', d.decision.signal.endsWith('long'));
   document.body.classList.toggle('bias-short', d.decision.signal.endsWith('short'));
   document.title = `${d.symbol} ${fmtPrice(d.mark)} · ${SIGNAL_TEXT[d.decision.signal]} — Futures Scalp Analyzer`;
@@ -1241,7 +1335,7 @@ function renderSignal(d) {
   $('scoreNum').textContent = score;
   $('scoreNum').style.color = score >= 58 ? 'var(--long)' : score <= 42 ? 'var(--short)' : 'var(--warn)';
   $('gaugeArc').style.strokeDashoffset = (314.16 * (1 - score / 100)).toFixed(2);
-  $('needle').style.transform = `rotate(${(-90 + 180 * score / 100).toFixed(1)}deg)`;
+  setNeedle(-90 + 180 * score / 100);
   const lab = $('sigLabel');
   lab.className = 'sig-label ' + dec.signal;
   lab.textContent = SIGNAL_TEXT[dec.signal];
@@ -1360,6 +1454,8 @@ function renderOI(d) {
      <div class="kv"><span class="muted">OI Δ (1 × ${tfLbl})</span><span class="vv ${clsOf(o.d1)}">${arrow(o.d1)} ${fmtPct(o.d1, 3)}</span></div>
      <div class="kv"><span class="muted">OI Δ (${wLbl})</span><span class="vv ${clsOf(o.dW)}">${arrow(o.dW)} ${fmtPct(o.dW, 3)}</span></div>
      <div class="kv"><span class="muted">Price Δ (${wLbl})</span><span class="vv ${clsOf(d.primary.priceChgW)}">${arrow(d.primary.priceChgW)} ${fmtPct(d.primary.priceChgW, 2)}</span></div>
+     ${d.errs.oiHist ? `<div class="note">⚠ OI history unavailable (${esc(d.errs.oiHist.message)}) — Δ values and regime need it.</div>` : ''}
+     ${d.errs.oi ? `<div class="note">⚠ Live OI unavailable — showing the latest historical value.</div>` : ''}
      <div class="insight ${o.dir > 0 && o.strength > 0.3 ? 'long' : o.dir < 0 && o.strength > 0.3 ? 'short' : (o.regime === 'short-covering' || o.regime === 'long-liquidation') ? 'warn' : ''}" style="margin-top:10px">${esc(o.note)}</div>`;
 }
 function windowLabel(tf) {
@@ -1396,7 +1492,7 @@ function renderTaker(d) {
      <div class="kv"><span class="muted">Taker buy volume</span><span class="vv up">${fmtCompact(t.buy)} ${esc(base)}</span></div>
      <div class="kv"><span class="muted">Taker sell volume</span><span class="vv down">${fmtCompact(t.sell)} ${esc(base)}</span></div>
      ${bars ? `<div class="label-xs" style="margin-top:8px">Ratio history (log, centred on 1.0)</div>${bars}` : ''}
-     <div class="dim" style="font-size:11px;margin-top:6px">Source: ${t.source === 'klines' ? 'kline taker-buy volume (fallback)' : 'Binance takerlongshortRatio'}</div>`;
+     ${t.source === 'klines' ? `<div class="note">⚠ takerlongshortRatio unavailable — using kline taker-buy volume instead.</div>` : '<div class="dim" style="font-size:11px;margin-top:6px">Source: Binance takerlongshortRatio</div>'}`;
 }
 
 function renderFunding(d) {
@@ -1415,7 +1511,7 @@ function renderFunding(d) {
   $('fundBody').innerHTML =
     `<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px">
        <div><div class="label-xs">Current rate</div><div class="big ${ext ? 'warnc' : f.rate < 0 ? 'down' : f.rate > FUNDING_BASELINE ? 'up' : ''}">${fmtPct(pct, 4)}</div></div>
-       <div style="text-align:right"><div class="label-xs">Next funding in</div><div class="countdown" id="fundCd">${fmtDuration(f.next - Date.now())}</div></div>
+       <div style="text-align:right"><div class="label-xs">Next funding in</div><div class="countdown" id="fundCd">${fmtDuration(f.next - serverNow())}</div></div>
      </div>
      <div class="fund-meter"><i style="left:${pos}%"></i></div>
      <div class="fund-scale"><span>−0.10%</span><span>−0.05%</span><span>0</span><span>+0.05%</span><span>+0.10%</span></div>
@@ -1494,7 +1590,7 @@ function drawChart() {
   const p = d.primary, k = p.k;
   const N = Math.min(W < 520 ? 48 : W < 900 ? 70 : 96, p.n);
   const start = p.n - N;
-  const padL = 6, padR = 72, padT = 30, padB = 16;
+  const padL = 6, padR = 72, padT = W < 420 ? 46 : 30, padB = 16;
   const pw = W - padL - padR, ph = H - padT - padB;
   let lo = Infinity, hi = -Infinity;
   for (let i = start; i < p.n; i++) {
@@ -1634,7 +1730,11 @@ function renderDropdown() {
       <span class="c ${t ? clsOf(t.chg) : ''}">${t ? fmtPct(t.chg) : ''}</span></div>`;
   }).join('');
   const act = $('opt-' + state.ddIndex);
-  if (act) act.scrollIntoView({ block: 'nearest' });
+  if (act) {
+    const top = act.offsetTop, bot = top + act.offsetHeight;
+    if (top < dd.scrollTop) dd.scrollTop = top - 30;
+    else if (bot > dd.scrollTop + dd.clientHeight) dd.scrollTop = bot - dd.clientHeight;
+  } else if (state.ddIndex <= 0) dd.scrollTop = 0;
 }
 function openDropdown() {
   $('symList').classList.add('open');
@@ -1653,7 +1753,7 @@ function selectSymbol(sym) {
   sym = String(sym).toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!sym) return;
   if (!sym.endsWith('USDT')) sym += 'USDT';
-  if (state.symbols.length && !state.meta[sym] && !state.symbols.find(s => s.symbol === sym)) {
+  if (state.universeOK && !state.meta[sym]) {
     showBanner(`<b>${esc(sym)}</b> is not an active USDⓈ-M USDT perpetual.`, 'warn');
     return;
   }
@@ -1667,10 +1767,13 @@ function selectSymbol(sym) {
 }
 function resetView() {
   state.data = null;
+  state.lastPrice = null;
+  $('grid').classList.add('switching');
   const el = $('markPrice'); el.classList.add('skeleton'); el.textContent = '00000.00';
   $('symName').textContent = state.symbol;
   $('sigLabel').className = 'sig-label neutral'; $('sigLabel').textContent = 'Analyzing…';
   $('scoreNum').textContent = '—';
+  $('sigSub').textContent = 'Loading ' + state.symbol + '…';
   const cv = $('chart'); const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
 }
 
@@ -1684,7 +1787,9 @@ function tick() {
   if (state.auto && state.nextAt) {
     const left = Math.max(0, state.nextAt - now);
     $('autoCd').textContent = state.inflight ? '…' : Math.ceil(left / 1000) + 's';
-    $('refreshBar').style.width = (100 * (1 - left / AUTO_INTERVAL)).toFixed(1) + '%';
+    const bar = $('refreshBar');
+    if (state.barCycle !== state.nextAt) { state.barCycle = state.nextAt; bar.classList.add('reset'); bar.style.width = '0%'; void bar.offsetWidth; bar.classList.remove('reset'); }
+    else bar.style.width = (100 * (1 - left / AUTO_INTERVAL)).toFixed(1) + '%';
     if (left <= 0 && !state.inflight && !document.hidden) refresh();
   } else {
     $('autoCd').textContent = state.auto ? '…' : 'off';
@@ -1694,7 +1799,7 @@ function tick() {
   // Funding countdown
   const fc = $('fundCd');
   if (fc && state.data && state.data.funding) {
-    const left = state.data.funding.next - now;
+    const left = state.data.funding.next - serverNow();
     fc.textContent = left > 0 ? fmtDuration(left) : 'Settling…';
   }
 }
