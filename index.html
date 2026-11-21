@@ -154,6 +154,17 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;ma
 
 .skeleton{color:transparent !important;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:8px}
 @keyframes sh{to{background-position:-200% 0}}
+.journal{margin-top:12px;padding:16px}
+.jstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.jlist{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.jlist li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 11px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid var(--border-soft);font-size:13px}
+.jlist .when{font-size:11.5px;color:var(--dim)}
+.st{font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.st.win{background:var(--long-soft);color:var(--long)}.st.loss{background:var(--short-soft);color:var(--short)}
+.st.open{background:rgba(90,200,250,.12);color:var(--info)}.st.none{background:rgba(255,255,255,.07);color:var(--muted)}
+.jnote{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.linkbtn{appearance:none;background:none;border:0;color:var(--dim);font:600 12px var(--font);cursor:pointer;text-decoration:underline;padding:0}
+@media (max-width:560px){ .jstats{grid-template-columns:repeat(2,minmax(0,1fr))} }
 footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-height:1.7}
 
 @media (max-width:560px){
@@ -248,6 +259,13 @@ footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-
     </div>
   </section>
 
+  <section class="journal glass hidden" id="journal" aria-label="سجل الإشارات">
+    <div class="bh"><span>سجل الإشارات ونتائجها الفعلية</span><button class="linkbtn" id="jClear">مسح السجل</button></div>
+    <div class="jstats" id="jStats"></div>
+    <div class="jnote" id="jNote"></div>
+    <ul class="jlist" id="jList"></ul>
+  </section>
+
   <footer>
     البيانات من واجهة Binance USDⓈ-M العامة (<span class="n">fapi.binance.com</span>) بدون مفاتيح. العقود الآجلة بالرافعة عالية المخاطر.
   </footer>
@@ -280,7 +298,7 @@ const AUTO_MS = 30000;
 const state = {
   mode: '15m', symbol: '', universe: new Map(), universeOK: false, vols: {},
   fundingHours: {}, clockOffset: 0, seq: 0, ctrl: null, busy: false,
-  last: null, health: {}, autoTimer: 0, ddItems: [], ddIdx: -1,
+  last: null, health: {}, autoTimer: 0, ddItems: [], ddIdx: -1, jBusy: false,
 };
 const serverNow = () => Date.now() + state.clockOffset;
 
@@ -784,6 +802,8 @@ async function run(raw, { silent = false } = {}) {
     a.data = d; a.at = now; a.errs = errs;
     state.last = a;
     render(a);
+    jRecord(a);
+    setTimeout(jEvaluate, 1500);
     setStatus('live', 'مباشر');
   } catch (e) {
     console.error(e);
@@ -978,6 +998,101 @@ function openDD() {
 }
 function closeDD() { $('symList').classList.add('hidden'); $('symInput').setAttribute('aria-expanded', 'false'); state.ddIdx = -1; }
 
+/* =========================== SIGNAL JOURNAL =========================== */
+// Every LONG/SHORT the site shows is logged (in this browser only) and later checked
+// against real 1m/5m candles: limit filled or expired, then TP1 or SL first, or time-out.
+const J_MAX = 300;
+const J_EVAL_TF = { '5m': '1m', '15m': '1m', '1h': '5m' };
+const J_HOLD = { '5m': 4 * 3600e3, '15m': 12 * 3600e3, '1h': 72 * 3600e3 };
+const jLoad = () => { const v = store.get('journal', []); return Array.isArray(v) ? v : []; };
+const jSave = list => store.set('journal', list.slice(0, J_MAX));
+const isOpen = r => r.status === 'pending' || r.status === 'active';
+function jRecord(a) {
+  const s = a.setup;
+  if (!s || (a.verdict !== 'long' && a.verdict !== 'short')) return;
+  const list = jLoad();
+  const same = r => r.sym === a.symbol && r.mode === a.mode && r.dir === s.dir;
+  if (list.some(r => same(r) && (isOpen(r) || a.at - r.at < 3 * TF_MS[a.mode]))) return; // no duplicates from refreshes
+  list.unshift({
+    id: a.at + ':' + a.symbol + ':' + a.mode, sym: a.symbol, mode: a.mode, dir: s.dir, at: a.at,
+    entry: s.entry, entryType: s.entryType, validUntil: s.validUntil, sl: s.sl, tp1: s.tp1, net1: s.net1,
+    conf: a.okCount, status: s.entryType === 'limit' ? 'pending' : 'active', filledAt: s.entryType === 'limit' ? 0 : a.at, checked: a.at,
+  });
+  jSave(list);
+  renderJournal();
+}
+function netR(r, exit) { const risk = Math.abs(r.entry - r.sl) / r.entry; return (((exit - r.entry) * r.dir) / r.entry - FEE_RT) / (risk + FEE_RT); }
+/** Walk closed candles after `checked`. Conservative: SL wins ties; TP is not counted on the fill candle. */
+function jStep(r, raw, now) {
+  for (const k of raw) {
+    const ot = +k[0], ct = +k[6], h = +k[2], l = +k[3], c = +k[4];
+    if (ct >= now) break;              // candle still forming
+    if (ct <= r.checked) continue;
+    let fillCandle = false;
+    if (r.status === 'pending') {
+      if (ot > r.validUntil) { r.status = 'expired'; r.closedAt = ot; return; }
+      if (!(r.dir > 0 ? l <= r.entry : h >= r.entry)) { r.checked = ct; continue; }
+      r.status = 'active'; r.filledAt = ot; fillCandle = true;
+    }
+    if (r.dir > 0 ? l <= r.sl : h >= r.sl) { r.status = 'sl'; r.R = -1; r.closedAt = ct; return; }
+    if (!fillCandle && (r.dir > 0 ? h >= r.tp1 : l <= r.tp1)) { r.status = 'tp1'; r.R = r.net1; r.closedAt = ct; return; }
+    if (ct - r.filledAt > J_HOLD[r.mode]) { r.status = 'timeout'; r.R = netR(r, c); r.closedAt = ct; return; }
+    r.checked = ct;
+  }
+}
+async function jEvaluate() {
+  if (state.jBusy || document.hidden) return;
+  const open = jLoad().filter(isOpen).filter(r => serverNow() - r.checked > 60000).slice(0, 6);
+  if (!open.length) { renderJournal(); return; }
+  state.jBusy = true;
+  try {
+    for (const r of open) {
+      try {
+        for (let w = 0; w < 4 && isOpen(r) && serverNow() - r.checked > 60000; w++) { // catch up up to 4 windows
+          const before = r.checked;
+          const raw = await api(`/fapi/v1/klines?symbol=${encodeURIComponent(r.sym)}&interval=${J_EVAL_TF[r.mode]}&startTime=${r.checked + 1}&limit=499`);
+          if (!Array.isArray(raw) || !raw.length) break;
+          jStep(r, raw, serverNow());
+          if (r.checked === before && isOpen(r)) break; // nothing new closed yet
+        }
+      } catch (e) { if (e.kind === 'bad') { r.status = 'void'; } }
+    }
+    const byId = new Map(open.map(r => [r.id, r]));
+    jSave(jLoad().map(r => byId.get(r.id) || r)); // merge, keep records added meanwhile
+  } finally { state.jBusy = false; renderJournal(); }
+}
+const J_LABEL = { pending: ['بانتظار التفعيل', 'open'], active: ['مفتوحة', 'open'], tp1: ['وصلت الهدف 1', 'win'], sl: ['ضربت الوقف', 'loss'], expired: ['لم يتفعّل الأمر', 'none'], timeout: ['انتهى الوقت', 'none'], void: ['ملغاة', 'none'] };
+function renderJournal() {
+  const list = jLoad(), card = $('journal');
+  if (!list.length) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  const done = list.filter(r => r.status === 'tp1' || r.status === 'sl' || r.status === 'timeout');
+  const wins = done.filter(r => r.R > 0).length;
+  const sumR = done.reduce((a, r) => a + (r.R || 0), 0);
+  const avgWin = done.filter(r => r.status === 'tp1').reduce((a, r, _, arr) => a + r.R / arr.length, 0);
+  const st = (k, v, cls = '') => `<div class="m"><div class="k">${k}</div><div class="v ${cls}">${v}</div></div>`;
+  $('jStats').innerHTML = [
+    st('صفقات انتهت', String(done.length)),
+    st('نسبة الفوز', done.length ? (wins / done.length * 100).toFixed(0) + '%' : '—'),
+    st('متوسط النتيجة', done.length ? (sumR / done.length >= 0 ? '+' : '') + (sumR / done.length).toFixed(2) + 'R' : '—', sumR > 0 ? 'up' : sumR < 0 ? 'down' : ''),
+    st('مفتوحة / لم تتفعّل', `${list.filter(isOpen).length} / ${list.filter(r => r.status === 'expired').length}`),
+  ].join('');
+  const be = avgWin > 0 ? 100 / (1 + avgWin) : NaN;
+  $('jNote').innerHTML = (done.length < 30
+    ? `العينة صغيرة (${N(done.length)} من ${N(30)} على الأقل) — لا تحكم على الأداة قبلها.`
+    : `مبنية على ${N(done.length)} صفقة حقيقية بعد العمولة.`)
+    + (isNum(be) ? ` التعادل يحتاج نسبة فوز فوق ${N(be.toFixed(0) + '%')}.` : '')
+    + ' يُحسب الهدف الأول أو الوقف أيهما أولاً، والسجل محفوظ في هذا المتصفح فقط.';
+  $('jList').innerHTML = list.slice(0, 15).map(r => {
+    const [lbl, cls] = J_LABEL[r.status] || ['—', 'none'];
+    const t = new Date(r.at - state.clockOffset);
+    const when = t.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) + ' ' + t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return `<li><span class="${r.dir > 0 ? 'up' : 'down'}" style="font-weight:800">${r.dir > 0 ? 'لونج' : 'شورت'}</span>
+      <span><span class="n">${esc(r.sym)}</span> <span class="dim n">${r.mode}</span><div class="when n">${when} · ${N(fmtP(r.entry, r.sym))}</div></span>
+      <span class="st ${cls}">${lbl}${isNum(r.R) ? ' ' + N((r.R >= 0 ? '+' : '') + r.R.toFixed(2) + 'R') : ''}</span></li>`;
+  }).join('');
+}
+
 /* =========================== AUTO REFRESH =========================== */
 function scheduleAuto() {
   clearTimeout(state.autoTimer);
@@ -1054,6 +1169,8 @@ function bind() {
   $('riskPct').addEventListener('input', renderCalc);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && $('autoToggle').checked && state.last && serverNow() - state.last.at > AUTO_MS && !state.busy) run(state.symbol, { silent: true }); });
   if ('ResizeObserver' in window) new ResizeObserver(() => { if (!$('details').classList.contains('hidden')) drawChart(); }).observe($('chart').parentElement);
+  $('jClear').addEventListener('click', () => { if (confirm('مسح كل سجل الإشارات؟')) { jSave([]); renderJournal(); } });
+  setInterval(jEvaluate, 120000);
   setInterval(() => { const fc = $('fundCd'); if (fc && state.last) fc.textContent = dur(state.last.data.nextFunding - serverNow()); }, 1000);
 }
 async function init() {
@@ -1067,10 +1184,12 @@ async function init() {
   setMode(MODES[mode] ? mode : '15m', false);
   if (store.get('details', false)) { $('details').classList.remove('hidden'); $('detailsBtn').textContent = 'إخفاء التفاصيل ▴'; }
   setStatus('loading', 'تحميل قائمة العقود…');
+  renderJournal();
   await loadUniverse().catch(() => {});
   setStatus(state.universeOK ? 'live' : 'error', state.universeOK ? 'جاهز' : 'تعذر تحميل القائمة');
   if (!state.universeOK) showMsg('تعذر تحميل قائمة العقود من باينانس — ما زال بإمكانك كتابة الاسم الكامل مثل <span class="n">BTCUSDT</span>.', 'error');
   if (sym) run(sym); else $('symInput').focus();
+  jEvaluate();
 }
 init();
 })();
