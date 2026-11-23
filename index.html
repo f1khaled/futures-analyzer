@@ -199,9 +199,9 @@ footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-
     </div>
     <div class="sub-row">
       <div class="modes" role="tablist" aria-label="نوع التداول">
-        <button class="mode" data-mode="5m" role="tab">سكالب <span class="n">5m</span></button>
-        <button class="mode" data-mode="15m" role="tab">سريع <span class="n">15m</span></button>
         <button class="mode" data-mode="1h" role="tab">يومي <span class="n">1h</span></button>
+        <button class="mode" data-mode="15m" role="tab">سريع <span class="n">15m</span></button>
+        <button class="mode" data-mode="5m" role="tab">سكالب <span class="n">5m</span></button>
       </div>
       <span class="hint" id="modeHint"></span>
     </div>
@@ -1131,9 +1131,9 @@ function setMode(m, rerun = true) {
   if (!MODES[m]) return;
   state.mode = m; store.set('mode', m);
   document.querySelectorAll('.mode').forEach(b => { const on = b.dataset.mode === m; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
-  $('modeHint').innerHTML = m === '5m'
-    ? '<span class="warnc">سكالب 5m هو الأصعب: العمولة والضوضاء تأكل أغلب الربح — يُفضّل 15m أو 1h.</span>'
-    : `الدخول ${N(MODES[m].tf)} · الفلتر ${N(MODES[m].htf)}`;
+  $('modeHint').innerHTML = m === '1h'
+    ? `الأفضل في اختبارنا على بيانات حقيقية · الدخول ${N('1h')} · الفلتر ${N('4h')}`
+    : `<span class="warnc">⚠ ${N(m)}: كان خاسراً بعد العمولة في اختبارنا على بيانات حقيقية — للمتابعة فقط، والأفضل ${N('1h')}.</span>`;
   if (rerun && state.symbol) run(state.symbol);
 }
 function bind() {
@@ -1180,10 +1180,10 @@ async function init() {
   $('acct').value = store.get('acct', 1000);
   $('riskPct').value = store.get('riskPct', 1);
   $('autoToggle').checked = store.get('auto', true);
-  let sym = store.get('sym', ''), mode = store.get('mode', '15m');
+  let sym = store.get('sym', ''), mode = store.get('mode', '1h');
   const h = decodeURIComponent((location.hash || '').slice(1));
   if (h) { const [s, m] = h.split('@'); if (s) sym = s; if (m && MODES[m]) mode = m; }
-  setMode(MODES[mode] ? mode : '15m', false);
+  setMode(MODES[mode] ? mode : '1h', false);
   if (store.get('details', false)) { $('details').classList.remove('hidden'); $('detailsBtn').textContent = 'إخفاء التفاصيل ▴'; }
   setStatus('loading', 'تحميل قائمة العقود…');
   renderJournal();
