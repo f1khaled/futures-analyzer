@@ -81,10 +81,11 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;ma
 .level{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:99px;font-size:13px;font-weight:750;white-space:nowrap}
 .level.calm{background:var(--up-s);color:var(--up)}.level.alert{background:var(--warn-s);color:var(--warn)}.level.danger{background:var(--down-s);color:var(--down)}
 .brief{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
-.brief li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center}
+.brief li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
 .bi{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;background:rgba(255,255,255,.06)}
 .brief .lbl{font-size:11.5px;color:var(--dim);font-weight:700}
 .brief .txt{font-size:15px;font-weight:650;line-height:1.45}
+.brief .mean{font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:1px}
 .brief li.up .bi{background:var(--up-s)}.brief li.up .txt{color:#b9f7da}
 .brief li.down .bi{background:var(--down-s)}.brief li.down .txt{color:#ffc4d2}
 .brief li.warn .bi{background:var(--warn-s)}.brief li.warn .txt{color:#ffe0a8}
@@ -185,7 +186,7 @@ footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-
       <div class="foot" id="rFoot"></div>
     </section>
     <section class="card glass hidden" id="details" aria-label="تفاصيل الأدوات">
-      <div class="bh"><span>أدوات باينانس — اضغط أي سطر للشرح</span><span id="rAge"></span></div>
+      <div class="bh"><span>كل أداة من أدوات باينانس — اضغط أي سطر عشان تفهمها</span><span id="rAge"></span></div>
       <div id="rTools"></div>
       <div class="other hidden" id="rOther"></div>
     </section>
@@ -245,17 +246,17 @@ const SHARED = (() => {
     return { k5, k15, pv, pq, pt, e7, e25, e99, a15, oi: m.oi || [], gls: m.gls || [], tpos: m.tpos || [] };
   }
   const SIT = {
-    S1:  { dir: -1, name: 'ازدحام لونج متأخر', desc: 'صعود قوي خلال 4 ساعات مع دخول مراكز جديدة وتمويل مرتفع، والجمهور يزيد اللونج.' },
-    S1b: { dir: 1,  name: 'ازدحام شورت متأخر', desc: 'هبوط قوي خلال 4 ساعات مع مراكز جديدة وتمويل سالب، والجمهور يزيد الشورت.' },
-    S2:  { dir: 1,  name: 'وقود سكويز للشورت', desc: 'السعر ثابت أو يصعد، والفائدة المفتوحة ترتفع، والتمويل سالب، والجمهور مائل للشورت.' },
-    S3:  { dir: -1, name: 'الكبار يبيعون للجمهور', desc: 'حسابات الكبار تقلل اللونج بينما الجمهور يزيده، والسعر شبه ثابت.' },
-    S3b: { dir: 1,  name: 'الكبار يشترون من الجمهور', desc: 'حسابات الكبار تزيد اللونج بينما الجمهور يقلله، والسعر شبه ثابت.' },
-    S4:  { dir: -1, name: 'صعود بإغلاق شورتات', desc: 'السعر صعد خلال ساعة لكن الفائدة المفتوحة نزلت — الحركة من إغلاق مراكز وليست أموالاً جديدة.' },
-    S4b: { dir: 1,  name: 'تصفية لونجات', desc: 'هبوط حاد خلال ساعة مع خروج كبير للمراكز وحجم مرتفع جداً.' },
-    S5:  { dir: 1,  name: 'اتجاه صاعد صحي', desc: 'المتوسطات مرتبة صعوداً، والمراكز تزيد بهدوء، والتمويل معتدل، والسعر قريب من EMA25.' },
-    S5b: { dir: -1, name: 'اتجاه هابط صحي', desc: 'المتوسطات مرتبة هبوطاً، والمراكز تزيد بهدوء، والتمويل معتدل، والسعر قريب من EMA25.' },
-    S6:  { dir: -1, name: 'امتصاص عند القمة', desc: 'شراء عدواني قوي لكن السعر لا يتحرك، وهو عند قمة 24 ساعة.' },
-    S7:  { dir: 0,  name: 'اندفاع يبرد', desc: 'صعدت 10%+ خلال 4 ساعات بحجم ضخم، والحين نازلة عن القمة والحجم هدأ.' },
+    S1:  { dir: -1, name: 'زحمة متأخرة على الصعود', desc: 'السعر طار بقوة، وناس كثير دخلت تراهن على الصعود متأخر، والرسوم عليهم عالية.' },
+    S1b: { dir: 1,  name: 'زحمة متأخرة على النزول', desc: 'السعر طاح بقوة، وناس كثير دخلت تراهن على النزول متأخر.' },
+    S2:  { dir: 1,  name: 'وقود لارتفاع مفاجئ', desc: 'أغلب الناس يراهنون على النزول ويدفعون رسوم، والسعر ما نزل — لو صعد شوي ممكن يجبرهم يقفلون ويطير السعر.' },
+    S3:  { dir: -1, name: 'الحسابات الكبيرة تبيع للصغار', desc: 'أصحاب الحسابات الكبيرة يقللون رهانهم على الصعود، بينما المتداولين الصغار يزيدونه.' },
+    S3b: { dir: 1,  name: 'الحسابات الكبيرة تشتري من الصغار', desc: 'أصحاب الحسابات الكبيرة يزيدون رهانهم على الصعود، بينما المتداولين الصغار يقللونه.' },
+    S4:  { dir: -1, name: 'صعود من إغلاق رهانات النزول', desc: 'السعر صعد، بس السبب إن الناس تقفل رهانها على النزول — مو فلوس جديدة.' },
+    S4b: { dir: 1,  name: 'بيع اضطراري (تصفيات)', desc: 'السعر طاح بسرعة وكثير من المراهنين على الصعود انقفلت صفقاتهم غصب.' },
+    S5:  { dir: 1,  name: 'صعود صحي ومستقر', desc: 'السعر صاعد بهدوء، والفلوس تدخل بشكل معتدل، وما فيه زحمة.' },
+    S5b: { dir: -1, name: 'نزول مستقر', desc: 'السعر نازل بهدوء، والفلوس تدخل على النزول بشكل معتدل.' },
+    S6:  { dir: -1, name: 'شراء قوي والسعر ما يتحرك', desc: 'فيه شراء مستعجل كثير، والسعر عند أعلى نقطة اليوم وما يطلع — غالباً بائع كبير يمتص الشراء.' },
+    S7:  { dir: 0,  name: 'اندفاع خلص وبدأ يهدى', desc: 'العملة طارت 10%+ بتداول ضخم، والحين نازلة عن القمة والتداول هدأ.' },
   };
   /** Features + detected situations at closed 5m index i. f8 = funding normalised to 8h (fraction). */
   function detectAt(S, i, f8, full = false) {
@@ -406,95 +407,106 @@ function readout(D) {
   const r6 = rsi(ch.c, 6), r12 = rsi(ch.c, 12), r24 = rsi(ch.c, 24), m5 = sma(ch.v, 5), m10 = sma(ch.v, 10);
   const E7 = e7[L], E25 = e25[L], E99 = e99[L], R6 = r6[L], R12 = r12[L], R24 = r24[L];
   const X = D.x || {};
+  const span = { '5m': 'آخر ساعتين', '15m': 'آخر 6 ساعات', '1h': 'آخر يوم' }[tf];   // ≈ horizon of EMA25 on this timeframe
   const out = { tools: [], warns: [], brief: [], sits: [], other: [] };
   for (const s of (X.sits || [])) (SIT_STATS && SIT_STATS[s] && SIT_STATS[s].confirmed ? out.sits : out.other).push(s);
   const T = (k, sub, val, st, tone, say) => out.tools.push({ k, sub, val, st, tone, say });
 
-  // ---- EMA ----
+  // ---- Trend (EMA 7/25/99) ----
   const stackUp = E7 > E25 && E25 > E99, stackDn = E7 < E25 && E25 < E99, dist25 = c / E25 - 1, stretched = Math.abs(dist25) > 0.05;
-  const trendWord = stackUp ? 'صاعد' : stackDn ? 'هابط' : 'جانبي';
-  const pos = c > Math.max(E7, E25, E99) ? 'فوق كل المتوسطات' : c < Math.min(E7, E25, E99) ? 'تحت كل المتوسطات' : c > E25 ? 'تحت EMA7 وفوق EMA25 — الزخم يهدأ' : 'تحت EMA25';
-  T('المتوسطات', 'EMA 7/25/99', `${fmtP(E7)} / ${fmtP(E25)} / ${fmtP(E99)}`, stackUp ? 'مرتبة صعوداً' : stackDn ? 'مرتبة هبوطاً' : 'متداخلة', stackUp ? 'up' : stackDn ? 'down' : '',
-    `${stackUp ? 'EMA7 فوق EMA25 فوق EMA99: الاتجاه صاعد.' : stackDn ? 'EMA7 تحت EMA25 تحت EMA99: الاتجاه هابط.' : 'المتوسطات متداخلة: لا اتجاه واضح.'} السعر ${pos}${stretched ? `، وممتد ${N(pct(dist25, 1))} عن EMA25 (احتمال رجوع له)` : ''}.`);
-  // ---- RSI ----
+  const trend = stackUp ? (c < E25 ? 'كان صاعد، والحين بدأ يضعف' : 'صاعد') : stackDn ? (c > E25 ? 'كان نازل، والنزول بدأ يهدى' : 'نازل') : 'بدون اتجاه واضح';
+  T('اتجاه السعر', 'EMA 7/25/99', `${fmtP(E7)} / ${fmtP(E25)} / ${fmtP(E99)}`, stackUp ? 'صاعد' : stackDn ? 'نازل' : 'بدون اتجاه', stackUp ? 'up' : stackDn ? 'down' : '',
+    `هذي ثلاث متوسطات لسعر العملة: قصير وعادي وطويل. لما تكون مرتبة فوق بعض يكون فيه اتجاه واضح. الحين: ${trend}. متوسط السعر ل${span} هو ${N(fmtP(E25))}، والسعر ${c >= E25 ? 'فوقه' : 'تحته'}${stretched ? ` وبعيد عنه ${N(pct(dist25, 1))} — لما يبتعد كثير غالباً يرجع له` : ''}.`);
+  // ---- Speed (RSI 6/12/24) ----
   const r6max = Math.max(...r6.slice(-7, -1).filter(isNum)), r6min = Math.min(...r6.slice(-7, -1).filter(isNum));
-  const rsiSt = R6 >= 80 ? 'متشبع شراء' : R6 <= 20 ? 'متشبع بيع' : (r6max >= 80 && R6 < R24) ? 'يبرد' : (r6min <= 20 && R6 > R24) ? 'يرتد' : 'طبيعي';
-  T('القوة النسبية', 'RSI 6/12/24', `${R6.toFixed(1)} / ${R12.toFixed(1)} / ${R24.toFixed(1)}`, rsiSt, rsiSt === 'طبيعي' ? '' : 'warn',
-    `RSI6 سريع يقيس آخر الشموع، وRSI24 يعطي الميل العام. ${rsiSt === 'يبرد' ? 'كان فوق 80 ونزل تحت RSI24: الاندفاع يهدأ.' : rsiSt === 'يرتد' ? 'كان تحت 20 وصعد فوق RSI24: ارتداد.' : rsiSt === 'طبيعي' ? 'في المنطقة الطبيعية.' : rsiSt + ' على المدى القصير جداً.'} الميل العام ${R24 >= 50 ? 'إيجابي' : 'سلبي'}.`);
+  const spd = R6 >= 80 ? 'طالع بسرعة زيادة' : R6 <= 20 ? 'نازل بسرعة زيادة' : (r6max >= 80 && R6 < R24) ? 'كان طالع بسرعة والحين يهدى' : (r6min <= 20 && R6 > R24) ? 'كان نازل بسرعة والحين يرتد' : 'سرعة طبيعية';
+  T('سرعة الحركة', 'RSI 6/12/24', `${R6.toFixed(1)} / ${R12.toFixed(1)} / ${R24.toFixed(1)}`, spd, spd === 'سرعة طبيعية' ? '' : 'warn',
+    `مقياس من 0 إلى 100 يقول هل السعر يتحرك بسرعة زيادة. فوق 80 يعني طلع بسرعة زيادة (ممكن يتعب ويرجع)، وتحت 20 يعني نزل بسرعة زيادة (ممكن يرتد). الحين: ${spd}.`);
   // ---- Volume ----
   const vNow = ch.v[L], vRatio = vNow / m5[L - 1];
   let spikeIdx = -1; for (let q = L; q >= L - 4; q--) if (ch.v[q] >= 3 * m10[q - 1]) { spikeIdx = q; break; }
-  const volSt = spikeIdx === L ? 'انفجار الآن' : (spikeIdx >= 0 && vNow < 0.6 * m5[L]) ? 'هدأ بعد انفجار' : spikeIdx >= 0 ? 'انفجار قريب' : vRatio >= 1.5 ? 'مرتفع' : vRatio <= 0.5 ? 'ضعيف' : 'عادي';
-  T('الحجم', 'VOL · MA5/MA10', `${compact(vNow)} · ${compact(m5[L])} / ${compact(m10[L])}`, volSt, spikeIdx >= 0 ? 'warn' : '',
-    `حجم الشمعة الحالية (لم تغلق بعد) = ${N(vRatio.toFixed(1) + '×')} متوسط آخر 5 شموع.${spikeIdx >= 0 ? ' فيه شمعة حجمها 3 أضعاف المتوسط أو أكثر خلال آخر 5 شموع.' : ''}`);
+  const volSt = spikeIdx === L ? 'تداول ضخم الآن' : (spikeIdx >= 0 && vNow < 0.6 * m5[L]) ? 'كان ضخم والحين هدأ' : spikeIdx >= 0 ? 'تداول ضخم قبل قليل' : vRatio >= 1.5 ? 'أعلى من العادة' : vRatio <= 0.5 ? 'أقل من العادة' : 'عادي';
+  T('حجم التداول', 'VOL · MA5/MA10', `${compact(vNow)} · ${compact(m5[L])} / ${compact(m10[L])}`, volSt, spikeIdx >= 0 ? 'warn' : '',
+    `كمية البيع والشراء في الشمعة الحالية مقارنة بالعادة: ${N(vRatio.toFixed(1) + '×')} المعدل. التداول الضخم المفاجئ غالباً معناه خبر أو حركة قوية.`);
   // ---- Funding ----
   const fr = D.funding, hours = D.fundingHours, f8 = fr * 8 / hours;
-  const fSt = !isNum(fr) ? '—' : f8 >= 0.0005 ? 'مرتفع جداً' : f8 <= -0.0005 ? 'سالب بقوة' : f8 > 0.0001 ? 'مائل للونج' : f8 < 0 ? 'سالب' : 'طبيعي';
-  T('التمويل', 'Funding', `${pct(fr, 4)} / ${hours}h · ${dur(D.nextFunding - serverNow())}`, fSt + (hours < 8 ? ` · كل ${hours}س` : ''), Math.abs(f8) >= 0.0005 || hours < 8 ? 'warn' : '',
-    `${fSt === 'مرتفع جداً' ? 'اللونجات تدفع كثير ومزدحمة — وقود لهبوط مفاجئ.' : fSt === 'سالب بقوة' ? 'الشورتات مزدحمة — وقود لسكويز صعود.' : fSt === 'طبيعي' ? 'تمويل طبيعي (0.01% هو الأساس).' : 'ميل بسيط، ليس متطرفاً.'}${hours < 8 ? ` مدة التمويل ${hours} ساعات بدل 8 — باينانس يقصّرها لما السوق مزدحم.` : ''} التسوية بعد ${N(dur(D.nextFunding - serverNow()))}.`);
+  const fSt = !isNum(fr) ? '—' : f8 >= 0.0005 ? 'المراهنين على الصعود يدفعون كثير' : f8 <= -0.0005 ? 'المراهنين على النزول يدفعون كثير' : f8 > 0.0001 ? 'أعلى من العادي شوي' : f8 < 0 ? 'المراهنين على النزول يدفعون' : 'عادي';
+  T('رسوم التمويل', 'Funding', `${pct(fr, 4)} / ${hours}h · ${dur(D.nextFunding - serverNow())}`, f8 >= 0.0005 ? 'زحمة على الصعود' : f8 <= -0.0005 ? 'زحمة على النزول' : fSt === 'عادي' ? 'عادي' : 'ميل بسيط', Math.abs(f8) >= 0.0005 || hours < 8 ? 'warn' : '',
+    `رسوم يدفعها أحد الطرفين للثاني كل ${hours} ساعات. لما المراهنين على الصعود يدفعون رسوم عالية، معناه إن الكل راكب على الصعود، وهذا يخلي السعر معرّض لنزول مفاجئ (والعكس). الحين: ${fSt}.${hours < 8 ? ` وباينانس صار يحسبها كل ${hours} ساعات بدل 8 — علامة إن السوق مزدحم.` : ''} الدفعة الجاية بعد ${N(dur(D.nextFunding - serverNow()))}.`);
   // ---- Open interest ----
-  const regime = (p, o) => !isNum(o) ? null : (p > 0.005 && o > 0.01) ? ['أموال جديدة تدخل مع الصعود', 'up', 'أموال تدخل'] : (p > 0.005 && o < -0.01) ? ['صعود من إغلاق شورتات (أضعف)', 'warn', 'إغلاق شورتات'] : (p < -0.005 && o > 0.01) ? ['شورتات جديدة تدخل مع الهبوط', 'down', 'شورتات تدخل'] : (p < -0.005 && o < -0.01) ? ['لونجات تطلع أو تتصفى', 'warn', 'لونجات تطلع'] : ['لا تغيّر مهم في المراكز', '', 'ثابتة'];
+  const regime = (p, o) => !isNum(o) ? null
+    : (p > 0.005 && o > 0.01) ? ['فيه ناس جديدة دخلت مع الصعود', 'الصعود عليه فلوس جديدة، مو بس حركة عابرة.', 'up', 'فلوس جديدة تدخل']
+    : (p > 0.005 && o < -0.01) ? ['الصعود جاي من ناس تقفل رهانها على النزول', 'صعود أضعف — ما فيه فلوس جديدة تدعمه.', 'warn', 'صعود من إغلاق']
+    : (p < -0.005 && o > 0.01) ? ['فيه ناس جديدة دخلت تراهن على النزول', 'النزول عليه فلوس جديدة تدفعه.', 'down', 'رهانات نزول جديدة']
+    : (p < -0.005 && o < -0.01) ? ['المراهنين على الصعود يطلعون (أو تنقفل صفقاتهم)', 'غالباً بيع اضطراري — ممكن يخلص بسرعة ويرتد.', 'warn', 'ناس تطلع']
+    : ['ما تغيّر شي مهم', 'ما فيه دخول أو خروج كبير للفلوس.', '', 'ثابت'];
   const rg1 = regime(X.P1h, X.OI1h), rg4 = regime(X.P4h, X.OI4h);
-  if (isNum(X.OI)) T('الفائدة المفتوحة', 'O.I.', `$${compact(X.OI * c)} · 1h ${pct(X.OI1h, 1)} · 4h ${pct(X.OI4h, 1)}`, rg1[2], rg1[1],
-    `آخر ساعة: ${rg1[0]} (السعر ${N(pct(X.P1h, 1))}). آخر 4 ساعات: ${rg4[0]} (السعر ${N(pct(X.P4h, 1))}).`);
-  else T('الفائدة المفتوحة', 'O.I.', '—', 'غير متاحة', '', 'تعذر جلب بيانات الفائدة المفتوحة.');
+  if (isNum(X.OI)) T('الصفقات المفتوحة', 'O.I.', `$${compact(X.OI * c)} · 1h ${pct(X.OI1h, 1)} · 4h ${pct(X.OI4h, 1)}`, rg1[3], rg1[2],
+    `مجموع الصفقات المفتوحة على العملة (${N('$' + compact(X.OI * c))}). لما يزيد مع حركة السعر، معناه فلوس جديدة تدخل وتدعم الحركة. لما ينقص، معناه ناس تقفل صفقاتها. آخر ساعة: ${rg1[0]}. آخر 4 ساعات: ${rg4[0]}.`);
+  else T('الصفقات المفتوحة', 'O.I.', '—', 'غير متاحة', '', 'تعذر جلب البيانات الحين.');
   // ---- Crowd ----
   const glsMean = D.m.gls.length ? D.m.gls.reduce((a, x) => a + x.v, 0) / D.m.gls.length : NaN, glsRel = glsMean > 0 ? X.GLS / glsMean - 1 : NaN;
   const crowdLong = isNum(X.GLS) && (X.GLS >= 3 || (X.GLS >= 1.5 && glsRel >= 0.15)), crowdShort = isNum(X.GLS) && (X.GLS <= 0.6 || (X.GLS <= 1 && glsRel <= -0.15));
-  const longPct = isNum(X.GLS) ? X.GLS / (1 + X.GLS) * 100 : NaN, crowdSt = crowdLong ? 'يزيد اللونج' : crowdShort ? 'يزيد الشورت' : 'معتاد';
-  if (isNum(X.GLS)) T('الجمهور', 'L.S Ratio', `${X.GLS.toFixed(2)} · avg24h ${glsMean.toFixed(2)} · 4h ${pct(X.GLSd4h, 1)}`, crowdSt, crowdLong || crowdShort ? 'warn' : '',
-    `${longPct.toFixed(0)}% من الحسابات لونج. ${crowdLong ? 'أعلى بوضوح من معدله — قراءة عكسية: وقود محتمل لهبوط.' : crowdShort ? 'الشورت أعلى بوضوح من معدله — وقود محتمل لسكويز صعود.' : 'قريب من معدله المعتاد لهذه العملة.'}`);
+  const longPct = isNum(X.GLS) ? X.GLS / (1 + X.GLS) * 100 : NaN;
+  if (isNum(X.GLS)) T('رأي أغلب المتداولين', 'L.S Ratio', `${X.GLS.toFixed(2)} · avg24h ${glsMean.toFixed(2)} · 4h ${pct(X.GLSd4h, 1)}`, `${longPct.toFixed(0)}% مع الصعود`, crowdLong || crowdShort ? 'warn' : '',
+    `من كل 100 حساب يتداول هذي العملة، ${N(longPct.toFixed(0))} راهنوا على الصعود. ${crowdLong ? 'هذا أكثر بوضوح من المعتاد — ولما الكل في جهة وحدة، السعر أحياناً يعاكسهم.' : crowdShort ? 'المراهنين على النزول أكثر بوضوح من المعتاد — وهذا ممكن يسبب ارتفاع مفاجئ.' : 'وهذا قريب من المعتاد لهذه العملة.'}`);
   // ---- Big accounts ----
   const div = X.TPOSd4h <= -0.05 && X.GLSd4h >= 0.05 ? 'sell' : X.TPOSd4h >= 0.05 && X.GLSd4h <= -0.05 ? 'buy' : '';
-  const bigSt = div === 'sell' ? 'يبيعون للجمهور' : div === 'buy' ? 'يشترون من الجمهور' : X.TPOSd4h <= -0.03 ? 'يقللون اللونج' : X.TPOSd4h >= 0.03 ? 'يزيدون اللونج' : 'ثابتون';
+  const bigSt = div === 'sell' ? 'يبيعون للصغار' : div === 'buy' ? 'يشترون من الصغار' : X.TPOSd4h <= -0.03 ? 'يقللون رهان الصعود' : X.TPOSd4h >= 0.03 ? 'يزيدون رهان الصعود' : 'ما غيّروا شي';
   const tacc = D.m.tacc.length ? D.m.tacc[D.m.tacc.length - 1].v : NaN;
-  if (isNum(X.TPOS)) T('كبار المتداولين', 'L.S Posit. / Acco.', `${X.TPOS.toFixed(2)} / ${isNum(tacc) ? tacc.toFixed(2) : '—'} · 4h ${pct(X.TPOSd4h, 1)}`, bigSt, div === 'sell' ? 'down' : div === 'buy' ? 'up' : '',
-    `أكبر 20% من الحسابات في باينانس (وليست محافظ بلوكتشين). نسبة مراكزهم ${X.TPOS > 1 ? 'مائلة للونج' : 'مائلة للشورت'}، وتغيرت ${N(pct(X.TPOSd4h, 1))} خلال 4 ساعات.`);
+  if (isNum(X.TPOS)) T('الحسابات الكبيرة', 'L.S Posit. / Acco.', `${X.TPOS.toFixed(2)} / ${isNum(tacc) ? tacc.toFixed(2) : '—'} · 4h ${pct(X.TPOSd4h, 1)}`, bigSt, div === 'sell' ? 'down' : div === 'buy' ? 'up' : '',
+    `أكبر 20% من الحسابات في باينانس (يسمونهم "الحيتان"). نشوف هل يزيدون أو يقللون رهانهم على الصعود. الحين: ${bigSt}${div === 'sell' ? '، بينما الصغار يزيدون — غالباً علامة سلبية بسيطة' : div === 'buy' ? '، بينما الصغار يقللون — غالباً علامة إيجابية بسيطة' : ''}.`);
   // ---- Taker ----
   const tkr = D.m.taker.slice(-12), tb = tkr.reduce((a, r) => a + r.b, 0), ts = tkr.reduce((a, r) => a + r.s, 0), tkR = ts > 0 ? tb / ts : X.TK1h;
-  const tkSt = tkR >= 1.3 ? 'شراء عدواني' : tkR <= 0.7 ? 'بيع عدواني' : tkR >= 1.1 ? 'ميل للشراء' : tkR <= 0.9 ? 'ميل للبيع' : 'متوازن';
   const absorb = Math.abs(X.P1h) < 0.003 && tkR >= 1.5;
-  T('ضغط الشراء والبيع', 'B.S Vol.', `${isNum(tkR) ? tkR.toFixed(2) : '—'} · 1h`, absorb ? 'امتصاص' : tkSt, absorb ? 'warn' : tkR >= 1.3 ? 'up' : tkR <= 0.7 ? 'down' : '',
-    `نسبة الشراء العدواني (بسعر السوق) إلى البيع العدواني آخر ساعة.${absorb ? ' شراء قوي والسعر لا يتحرك = بائع كبير يمتص الطلب.' : ''}`);
+  const tkSt = absorb ? 'شراء قوي بدون فايدة' : tkR >= 1.3 ? 'المشترين مستعجلين' : tkR <= 0.7 ? 'البائعين مستعجلين' : tkR >= 1.1 ? 'ميل للشراء' : tkR <= 0.9 ? 'ميل للبيع' : 'متوازن';
+  T('مين مستعجل أكثر؟', 'B.S Vol.', `${isNum(tkR) ? tkR.toFixed(2) : '—'} · 1h`, tkSt, absorb ? 'warn' : tkR >= 1.3 ? 'up' : tkR <= 0.7 ? 'down' : '',
+    `يقارن اللي يشترون فوراً بسعر السوق باللي يبيعون فوراً، خلال آخر ساعة. الحين: ${tkSt}.${absorb ? ' فيه شراء مستعجل كثير والسعر ما يتحرك — غالباً بائع كبير يمتص الشراء.' : ''}`);
   // ---- Basis ----
-  if (isNum(D.basisRate)) { const b = D.basisRate; T('الفرق عن الفوري', 'Basis', pct(b, 3), b >= 0.003 ? 'حماس' : b <= -0.003 ? 'ضغط بيع' : 'طبيعي', Math.abs(b) >= 0.003 ? 'warn' : '',
-    b >= 0.003 ? 'العقد أغلى من السعر الفوري بوضوح — حماس بالرافعة.' : b <= -0.003 ? 'العقد أرخص من الفوري — ضغط بيع بالرافعة.' : 'فرق طبيعي بين العقد والسعر الفوري.'); }
+  if (isNum(D.basisRate)) { const b = D.basisRate; T('سعر العقد مقابل السعر الحقيقي', 'Basis', pct(b, 3), b >= 0.003 ? 'فيه حماس' : b <= -0.003 ? 'فيه ضغط بيع' : 'عادي', Math.abs(b) >= 0.003 ? 'warn' : '',
+    b >= 0.003 ? 'سعر العقد أعلى من سعر العملة الحقيقي بوضوح — الناس متحمسة وتشتري بالرافعة.' : b <= -0.003 ? 'سعر العقد أقل من السعر الحقيقي — فيه ضغط بيع بالرافعة.' : 'سعر العقد قريب من سعر العملة الحقيقي — طبيعي.'); }
 
-  // ---- The short summary (max 4 lines) ----
-  const momTxt = rsiSt !== 'طبيعي' ? ` · RSI ${rsiSt}` : '';
-  out.brief.push({ ic: stackUp ? '📈' : stackDn ? '📉' : '↔️', lbl: `الاتجاه (${tf})`, tone: stackUp ? 'up' : stackDn ? 'down' : '',
-    txt: `${trendWord}${stackUp && c < E25 ? ' لكنه يضعف' : stackDn && c > E25 ? ' لكنه يضعف' : ''}${momTxt}${stretched ? ' · ممتد عن EMA25' : ''}` });
-  if (rg1) out.brief.push({ ic: '💰', lbl: 'المراكز (آخر ساعة)', tone: rg1[1], txt: `${rg1[0]} — ${N('OI ' + pct(X.OI1h, 1))}` });
-  if (isNum(X.GLS)) out.brief.push({ ic: '👥', lbl: 'الجمهور والكبار', tone: div === 'sell' ? 'down' : div === 'buy' ? 'up' : (crowdLong || crowdShort) ? 'warn' : '',
-    txt: div ? `الكبار ${bigSt}` + ` · الجمهور ${N(longPct.toFixed(0) + '%')} لونج` : `الجمهور ${N(longPct.toFixed(0) + '%')} لونج (${crowdSt}) · الكبار ${bigSt}` });
-  if (fSt !== 'طبيعي' || hours < 8) out.brief.push({ ic: '⏱', lbl: 'التمويل', tone: Math.abs(f8) >= 0.0005 || hours < 8 ? 'warn' : '', txt: `${fSt} ${N(pct(fr, 4))}${hours < 8 ? ` · كل ${hours} ساعات` : ''}` });
-  else if (volSt !== 'عادي') out.brief.push({ ic: '📊', lbl: 'الحجم', tone: spikeIdx >= 0 ? 'warn' : '', txt: `${volSt} (${N(vRatio.toFixed(1) + '×')} المتوسط)` });
+  // ---- The plain summary (max 4 lines, each with "what it means") ----
+  const trendMean = stackUp ? (c < E25 ? `نزل تحت متوسط سعره ل${span} — انتبه، ممكن يتغير الاتجاه.` : 'المشترين مسيطرين حالياً.')
+    : stackDn ? (c > E25 ? `صعد فوق متوسط سعره ل${span} — ممكن بداية ارتداد.` : 'البائعين مسيطرين حالياً.')
+    : 'السوق متردد — الحركات فيه غالباً مضللة.';
+  out.brief.push({ ic: stackUp ? '📈' : stackDn ? '📉' : '↔️', lbl: 'السعر', tone: stackUp && c >= E25 ? 'up' : stackDn && c <= E25 ? 'down' : '',
+    txt: trend + (spd !== 'سرعة طبيعية' ? ` · ${spd}` : ''), mean: trendMean + (stretched ? ' وهو بعيد عن متوسطه، فاحتمال يرجع له.' : '') });
+  if (rg1) out.brief.push({ ic: '💰', lbl: 'الفلوس (آخر ساعة)', tone: rg1[2], txt: rg1[0], mean: rg1[1] });
+  if (isNum(X.GLS)) out.brief.push({ ic: '👥', lbl: 'المتداولين', tone: div === 'sell' ? 'down' : div === 'buy' ? 'up' : (crowdLong || crowdShort) ? 'warn' : '',
+    txt: `${N(longPct.toFixed(0) + '%')} من المتداولين مراهنين على الصعود`,
+    mean: div === 'sell' ? 'والحسابات الكبيرة تقلل رهانها على الصعود — غالباً علامة سلبية بسيطة.' : div === 'buy' ? 'والحسابات الكبيرة تزيد رهانها على الصعود — غالباً علامة إيجابية بسيطة.'
+      : crowdLong ? 'وهذا أكثر من العادة — لما الكل في جهة وحدة، السعر أحياناً يعاكسهم.' : crowdShort ? 'والمراهنين على النزول أكثر من العادة — ممكن يصير ارتفاع مفاجئ.' : 'وهذا قريب من المعتاد لهذه العملة.' });
+  if (Math.abs(f8) >= 0.0005 || hours < 8) out.brief.push({ ic: '⏱', lbl: 'رسوم التمويل', tone: 'warn',
+    txt: f8 >= 0.0005 ? 'المراهنين على الصعود يدفعون رسوم عالية' : f8 <= -0.0005 ? 'المراهنين على النزول يدفعون رسوم عالية' : `الرسوم صارت كل ${hours} ساعات بدل 8`,
+    mean: f8 >= 0.0005 ? 'يعني الرهان على الصعود مزدحم ومكلف، وممكن ينقلب فجأة.' : f8 <= -0.0005 ? 'يعني الرهان على النزول مزدحم — ممكن يصير ارتفاع مفاجئ.' : 'باينانس يسوي كذا لما السوق مزدحم في جهة وحدة.' });
+  else if (volSt !== 'عادي') out.brief.push({ ic: '📊', lbl: 'حجم التداول', tone: spikeIdx >= 0 ? 'warn' : '', txt: volSt,
+    mean: spikeIdx === L || (spikeIdx >= 0 && volSt === 'تداول ضخم قبل قليل') ? 'غالباً فيه خبر أو حركة قوية — الحركات بعدها تكون عنيفة.' : volSt === 'كان ضخم والحين هدأ' ? 'الاندفاع خلص — السعر ممكن يتذبذب أو يرجع.' : volSt === 'أعلى من العادة' ? 'فيه اهتمام بالعملة أكثر من العادة.' : 'الحركات وقت التداول الضعيف أقل موثوقية.' });
 
-  // ---- Warnings (most severe first) ----
+  // ---- Warnings (plain, most severe first) ----
   const W = (lvl, t) => out.warns.push({ lvl, t });
   const vol24 = X.vol24 || D.vol24;
-  if (vol24 < 10e6) W('danger', `سيولة ضعيفة جداً (${N('$' + compact(vol24))} في 24 ساعة) — انزلاق وتلاعب محتمل.`);
-  if (isNum(X.OI) && X.OI * c < 5e6) W('danger', `فائدة مفتوحة صغيرة (${N('$' + compact(X.OI * c))}) — محفظة واحدة تحرك السعر.`);
-  if (isNum(D.spreadPct) && D.spreadPct > 0.1) W('danger', `فرق سعر شراء/بيع واسع (${N(D.spreadPct.toFixed(2) + '%')}).`);
-  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `تحركت ${N(pct(X.P4h, 1))} خلال 4 ساعات — مطاردة الحركة خطرة.`);
-  if (Math.abs(f8) >= 0.0005) W('warn', `تمويل متطرف (${N(pct(f8, 3))} لكل 8 ساعات).`);
-  if (vol24 >= 10e6 && vol24 < 30e6) W('warn', `سيولة متوسطة (${N('$' + compact(vol24))} في 24 ساعة) — قلّل الحجم.`);
-  if (D.onboard && serverNow() - D.onboard < 30 * 864e5) W('warn', `عقد جديد (عمره ${Math.max(1, Math.round((serverNow() - D.onboard) / 864e5))} يوم).`);
-  if (isNum(D.markLastGap) && Math.abs(D.markLastGap) > 0.005) W('warn', `فرق كبير بين سعر العلامة وآخر سعر (${N(pct(D.markLastGap, 2))}).`);
-  if (isNum(X.metricsAge) && X.metricsAge > 20 * 60000) W('warn', `بيانات المراكز قديمة (${Math.round(X.metricsAge / 60000)} دقيقة).`);
+  if (vol24 < 10e6) W('danger', `العملة قليلة التداول (${N('$' + compact(vol24))} في اليوم) — سهل أحد يحرك سعرها، وممكن تدخل بسعر وتطلع بسعر أسوأ.`);
+  if (isNum(X.OI) && X.OI * c < 5e6) W('danger', `الفلوس المفتوحة على العملة قليلة (${N('$' + compact(X.OI * c))}) — شخص واحد كبير يقدر يحرك السعر.`);
+  if (isNum(D.spreadPct) && D.spreadPct > 0.1) W('danger', `الفرق بين سعر الشراء والبيع كبير (${N(D.spreadPct.toFixed(2) + '%')}) — تخسر من أول ما تدخل.`);
+  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `العملة تحركت ${N(pct(X.P4h, 1))} في 4 ساعات — الدخول بعد حركة كبيرة خطر لأنها ممكن ترجع.`);
+  if (vol24 >= 10e6 && vol24 < 30e6) W('warn', `التداول على العملة متوسط (${N('$' + compact(vol24))} في اليوم) — استخدم مبلغ أصغر.`);
+  if (D.onboard && serverNow() - D.onboard < 30 * 864e5) W('warn', `العملة جديدة في باينانس (عمرها ${Math.max(1, Math.round((serverNow() - D.onboard) / 864e5))} يوم) — حركتها صعب تتوقعها.`);
+  if (isNum(D.markLastGap) && Math.abs(D.markLastGap) > 0.005) W('warn', `فيه فرق بين السعر اللي تنحسب عليه التصفية وآخر سعر (${N(pct(D.markLastGap, 2))}) — احذر التصفية.`);
+  if (isNum(X.metricsAge) && X.metricsAge > 20 * 60000) W('warn', `بعض البيانات متأخرة ${Math.round(X.metricsAge / 60000)} دقيقة.`);
 
-  // ---- Watch (one line) ----
+  // ---- Watch (one plain line) ----
   const hi = Math.max(...ch.h.slice(-50)), lo = Math.min(...ch.l.slice(-50));
-  out.watch = `${c >= E25 ? 'الثبات فوق' : 'استعادة'} ${N(fmtP(E25))} (EMA25) · القمة ${N(fmtP(hi))} · القاع ${N(fmtP(lo))}`;
+  out.watch = `${c >= E25 ? `لو نزل تحت ${N(fmtP(E25))} يضعف أكثر` : `لو رجع فوق ${N(fmtP(E25))} يتحسن`} (هذا متوسط سعره ل${span}). أعلى سعر قريب ${N(fmtP(hi))}، وأدنى سعر ${N(fmtP(lo))}.`;
 
   // ---- Headline & caution level ----
   const danger = out.warns.some(w => w.lvl === 'danger');
-  out.level = danger ? ['danger', 'خطر'] : out.warns.length ? ['alert', 'انتبه'] : ['calm', 'هادئ'];
+  out.level = danger ? ['danger', 'خطر', 'مخاطر عالية'] : out.warns.length ? ['alert', 'انتبه', 'فيه أشياء تستاهل الحذر'] : ['calm', 'هادئ', 'ما فيه مخاطر غير عادية'];
   if (out.sits.length) { const s = SIT[out.sits[0]]; out.head = s.name; out.sub = s.desc; }
-  else if (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) { out.head = X.P1h > 0 ? 'اندفاع صاعد قوي' : 'هبوط حاد'; out.sub = `${N(pct(X.P1h, 1))} خلال ساعة بحجم ${N(X.VS1h.toFixed(1) + '×')} المعتاد.`; }
-  else if (stackUp) { out.head = c < E25 ? 'اتجاه صاعد يضعف' : 'اتجاه صاعد'; out.sub = c < E25 ? 'السعر نزل تحت EMA25.' : c < E7 ? 'السعر تحت EMA7 — الزخم يهدأ.' : 'السعر فوق المتوسطات.'; }
-  else if (stackDn) { out.head = c > E25 ? 'اتجاه هابط يضعف' : 'اتجاه هابط'; out.sub = c > E25 ? 'السعر صعد فوق EMA25.' : c > E7 ? 'السعر فوق EMA7 — الهبوط يهدأ.' : 'السعر تحت المتوسطات.'; }
-  else { out.head = 'حركة جانبية'; out.sub = 'المتوسطات متداخلة — السوق بدون اتجاه واضح.'; }
+  else if (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) { out.head = X.P1h > 0 ? `السعر طار ${pct(X.P1h, 1)} في ساعة` : `السعر طاح ${pct(X.P1h, 1)} في ساعة`; out.sub = `مع تداول ${N(X.VS1h.toFixed(1) + '×')} العادة — حركة قوية وعنيفة.`; }
+  else if (stackUp) { out.head = c < E25 ? 'كان صاعد، والحين بدأ يضعف' : 'السعر في صعود'; out.sub = trendMean; }
+  else if (stackDn) { out.head = c > E25 ? 'كان نازل، والنزول بدأ يهدى' : 'السعر في نزول'; out.sub = trendMean; }
+  else { out.head = 'السعر بدون اتجاه واضح'; out.sub = 'يطلع وينزل بدون اتجاه — الحركات فيه غالباً مضللة.'; }
   out.c = c; out.f8 = f8;
   return out;
 }
@@ -569,8 +581,9 @@ function showLoading(sym, tf) {
   $('rWatch').classList.add('hidden');
 }
 function sitLine(id, i) {
-  const s = SIT[id], st = SIT_STATS[id], m60 = st.m60 * 100;
-  return `<div class="sitline ${s.dir > 0 ? 'up' : s.dir < 0 ? 'down' : ''}"><b>✓ ${i === 0 ? 'النتيجة التاريخية لهذا الموقف' : s.name}</b><small>موقف ثبت في اختبار سنة (${N(st.n.toLocaleString('en-US'))} حالة): بعد ساعة كان السعر ${m60 >= 0 ? 'أعلى' : 'أقل'} بمتوسط ${N(pctRaw(m60, 2))}، وصعد في ${N(st.up.toFixed(0) + '%')} من المرات (المعتاد ${N(SIT_BASE_UP.toFixed(0) + '%')}). أثر صغير — معلومة مساعدة وليست إشارة.</small></div>`;
+  const s = SIT[id], st = SIT_STATS[id], m60 = st.m60 * 100, diff = st.up - SIT_BASE_UP;
+  const lean = Math.abs(diff) < 1 ? 'تقريباً نفس العادي' : diff > 0 ? 'ميل بسيط للصعود' : 'ميل بسيط للنزول';
+  return `<div class="sitline ${s.dir > 0 ? 'up' : s.dir < 0 ? 'down' : ''}"><b>✓ ${i === 0 ? 'وش صار بعد هذا الموقف في الماضي؟' : s.name}</b><small>اختبرناه على سنة كاملة: صار ${N(st.n.toLocaleString('en-US'))} مرة على ${N(st.coins)} عملة. بعدها بساعة، السعر صعد في ${N(st.up.toFixed(0) + '%')} من المرات (العادي ${N(SIT_BASE_UP.toFixed(0) + '%')}) — يعني ${lean}، ومتوسط الحركة ${N(pctRaw(m60, 2))} بس. معلومة مساعدة، مو ضمان.</small></div>`;
 }
 function render(L) {
   const { D, R } = L;
@@ -579,16 +592,17 @@ function render(L) {
   $('rPx').textContent = fmtP(R.c);
   const ch = $('rChg'); ch.textContent = isNum(D.chg24) ? pctRaw(D.chg24) + ' 24h' : ''; ch.className = 'pill ' + (D.chg24 >= 0 ? 'up' : 'down');
   $('rHead').textContent = R.head; $('rSub').innerHTML = R.sub;
-  $('rLevel').innerHTML = `<span class="level ${R.level[0]}">${R.level[0] === 'calm' ? '●' : '▲'} ${R.level[1]}</span>`;
-  $('rBrief').innerHTML = R.brief.map(b => `<li class="${b.tone}"><span class="bi">${b.ic}</span><div><div class="lbl">${b.lbl}</div><div class="txt">${b.txt}</div></div></li>`).join('');
+  $('rLevel').innerHTML = `<span class="level ${R.level[0]}" title="${R.level[2]}">${R.level[0] === 'calm' ? '●' : '▲'} الحذر: ${R.level[1]}</span>`;
+  $('rSub').innerHTML = R.sub + `<div class="dim" style="font-size:12.5px;margin-top:4px">مستوى الحذر «${R.level[1]}»: ${R.level[2]}.</div>`;
+  $('rBrief').innerHTML = R.brief.map(b => `<li class="${b.tone}"><span class="bi">${b.ic}</span><div><div class="lbl">${b.lbl}</div><div class="txt">${b.txt}</div>${b.mean ? `<div class="mean">${b.mean}</div>` : ''}</div></li>`).join('');
   const w = R.warns.slice(0, 2);
   $('rAlerts').innerHTML = w.length ? `<div class="alertbox ${w.some(x => x.lvl === 'danger') ? 'danger' : ''}">${w.map(x => `<div>⚠ ${x.t}</div>`).join('')}${R.warns.length > 2 ? `<div class="dim">+${R.warns.length - 2} تحذير آخر في التفاصيل</div>` : ''}</div>` : '';
-  $('rWatch').innerHTML = '👁 راقب: ' + R.watch; $('rWatch').classList.remove('hidden');
+  $('rWatch').innerHTML = '👁 <b>وش تراقب:</b> ' + R.watch; $('rWatch').classList.remove('hidden');
   $('rSits').innerHTML = R.sits.map((id, i) => sitLine(id, i)).join('');
   $('rTools').innerHTML = R.tools.map(t => `<details class="trow"><summary><span class="nm">${t.k}<small>${t.sub}</small></span><span class="st ${t.tone}">${t.st}</span><span class="chev">▾</span><span class="vl">${t.val}</span></summary><div class="say">${t.say}</div></details>`).join('')
     + (R.warns.length > 2 ? `<div class="other">كل التحذيرات: ${R.warns.map(x => x.t).join(' · ')}</div>` : '');
   const oth = $('rOther'); oth.classList.toggle('hidden', !R.other.length);
-  oth.innerHTML = R.other.length ? `مواقف ظهرت لكنها <b>لم تثبت</b> في الاختبار (لا تعتمد عليها): ${R.other.map(s => SIT[s].name).join('، ')}.` : '';
+  oth.innerHTML = R.other.length ? `ظهرت كمان: ${R.other.map(s => SIT[s].name).join('، ')} — بس هذي <b>ما ثبتت</b> لما اختبرناها على الماضي، فلا تعتمد عليها.` : '';
   const age = D.x && isNum(D.x.metricsAge) ? Math.round(D.x.metricsAge / 60000) : null;
   $('rAge').innerHTML = age !== null ? `<span class="dim">عمر بيانات المراكز ${N(age + 'د')}</span>` : '';
   $('rFoot').innerHTML = `تحديث ${N(new Date(L.at - state.clockOffset).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))} · قراءة للبيانات وليست توصية.`;
