@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07080c">
+<meta name="description" content="يقرأ أدوات باينانس للعقود الآجلة (EMA، RSI، الحجم، التمويل، الفائدة المفتوحة، نسب الحيتان والجمهور، ضغط الشراء والبيع، Basis) ويشرح وضع العملة بالعربي مع التحذيرات، ورادار للعملات النشطة.">
+<title>قارئ أدوات باينانس</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307080c'/%3E%3Ccircle cx='28' cy='28' r='14' stroke='%235ac8fa' stroke-width='6' fill='none'/%3E%3Cpath d='M39 39l12 12' stroke='%235ac8fa' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#07080c; --border:rgba(255,255,255,.12); --soft:rgba(255,255,255,.07);
+  --text:#f3f4f7; --muted:#9aa1b2; --dim:#666d7d;
+  --up:#00e887; --up-s:rgba(0,232,135,.12); --down:#ff3d6e; --down-s:rgba(255,61,110,.12);
+  --warn:#ffb224; --warn-s:rgba(255,178,36,.12); --info:#5ac8fa; --info-s:rgba(90,200,250,.12);
+  --font:-apple-system,BlinkMacSystemFont,"SF Arabic","SF Pro Text","Segoe UI","Noto Sans Arabic",Tahoma,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{min-height:100vh;font-family:var(--font);font-size:15.5px;line-height:1.6;color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background:radial-gradient(900px 600px at 85% -10%,rgba(40,90,255,.16),transparent 60%),radial-gradient(700px 500px at 0% 100%,rgba(0,200,120,.06),transparent 60%),var(--bg);background-color:var(--bg)}
+.n{font-family:var(--mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;letter-spacing:-.01em}
+.up{color:var(--up)}.down{color:var(--down)}.warnc{color:var(--warn)}.muted{color:var(--muted)}.dim{color:var(--dim)}
+.hidden{display:none !important}
+.wrap{max-width:760px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px max(32px,env(safe-area-inset-bottom))}
+.glass{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid var(--border);border-radius:20px;
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);box-shadow:0 16px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1)}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 12px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--info-s);border:1px solid rgba(90,200,250,.35)}
+.brand h1{margin:0;font-size:16.5px;font-weight:750}
+.brand small{display:block;font-size:11.5px;color:var(--dim);margin-top:-2px}
+.status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.dot.live{background:var(--up);box-shadow:0 0 10px var(--up)}.dot.loading{background:var(--info);animation:blink 1s infinite}.dot.error{background:var(--down)}
+@keyframes blink{50%{opacity:.3}}
+.tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:rgba(0,0,0,.3);border:1px solid var(--soft);margin-bottom:12px}
+.tab{flex:1;appearance:none;border:0;background:transparent;color:var(--muted);font:700 14.5px var(--font);height:40px;border-radius:10px;cursor:pointer}
+.tab.active{background:rgba(255,255,255,.12);color:var(--text)}
+.box{padding:12px;position:relative;z-index:20}
+.inrow{display:flex;gap:8px}
+.field{flex:1;min-width:0;position:relative}
+.field input{width:100%;height:52px;padding:0 14px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid var(--soft);color:var(--text);font:600 17px var(--font);outline:0;text-align:right}
+.field input::placeholder{color:var(--dim);font-weight:500;font-size:15px}
+.field input:focus{border-color:rgba(90,200,250,.6);box-shadow:0 0 0 4px rgba(90,200,250,.12)}
+.btn{appearance:none;height:52px;padding:0 18px;border-radius:14px;border:0;cursor:pointer;font:700 15px var(--font);white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#7fd8ff,#36b4f0);color:#04121b}
+.btn.ghost{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--soft)}
+.btn.sm{height:38px;font-size:13px;padding:0 12px}
+.btn:disabled{opacity:.5}
+.sub-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+.chips{display:flex;gap:4px;padding:3px;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--soft)}
+.chip{appearance:none;border:0;background:transparent;color:var(--muted);font:650 13px var(--mono);height:34px;padding:0 14px;border-radius:9px;cursor:pointer}
+.chip.active{background:rgba(255,255,255,.12);color:var(--text)}
+.hint{font-size:12px;color:var(--dim)}
+.dropdown{position:absolute;left:0;right:0;top:calc(100% + 6px);max-height:min(320px,50vh);overflow-y:auto;padding:5px;border-radius:14px;background:#11131b;border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.6);z-index:40}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:9px;cursor:pointer;min-height:44px;font-size:14px}
+.opt:hover,.opt.active{background:rgba(255,255,255,.07)}
+.msg{margin-top:12px;padding:12px 14px;border-radius:14px;font-size:14px;border:1px solid var(--soft);background:rgba(255,255,255,.04)}
+.msg.error{border-color:rgba(255,61,110,.35);background:var(--down-s);color:#ffd3de}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sug{appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);border-radius:99px;padding:6px 12px;font:600 13px var(--mono);cursor:pointer}
+
+.card{margin-top:12px;padding:18px}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.meta .sym{font:750 17px var(--mono);color:var(--text)}
+.meta .px{font:650 16px var(--mono);color:var(--text)}
+.headline{margin:12px 0 2px;font-size:clamp(23px,6.2vw,31px);font-weight:800;line-height:1.25}
+.hsub{font-size:14.5px;color:#d7dbe4}
+.level{display:inline-flex;align-items:center;gap:6px;margin-top:10px;height:30px;padding:0 12px;border-radius:99px;font-size:13.5px;font-weight:750}
+.level.calm{background:var(--up-s);color:var(--up);border:1px solid rgba(0,232,135,.3)}
+.level.alert{background:var(--warn-s);color:var(--warn);border:1px solid rgba(255,178,36,.3)}
+.level.danger{background:var(--down-s);color:var(--down);border:1px solid rgba(255,61,110,.3)}
+.dims{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.dim3{padding:10px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid var(--soft);min-width:0}
+.dim3 .k{font-size:11.5px;color:var(--dim);font-weight:700}
+.dim3 .v{font-size:14px;font-weight:750;margin-top:2px}
+.dim3.up{border-color:rgba(0,232,135,.28)}.dim3.up .v{color:var(--up)}
+.dim3.down{border-color:rgba(255,61,110,.28)}.dim3.down .v{color:var(--down)}
+.dim3.warn{border-color:rgba(255,178,36,.3)}.dim3.warn .v{color:var(--warn)}
+.block{margin-top:16px;padding-top:14px;border-top:1px solid var(--soft)}
+.bh{font-size:12px;font-weight:750;color:var(--dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.list li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:14px;color:#dfe2ea}
+.ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;margin-top:1px}
+.ic.warn{background:var(--warn-s);color:var(--warn)}.ic.danger{background:var(--down-s);color:var(--down)}.ic.eye{background:var(--info-s);color:var(--info)}
+.sit{padding:12px 14px;border-radius:14px;border:1px solid var(--soft);background:rgba(255,255,255,.035);margin-bottom:8px}
+.sit .t{font-weight:800;font-size:15px}
+.sit .d{font-size:13.5px;color:#d7dbe4;margin-top:2px}
+.sit .h{font-size:12.5px;color:var(--muted);margin-top:6px}
+.sit.down{border-color:rgba(255,61,110,.3)}.sit.up{border-color:rgba(0,232,135,.28)}.sit.flat{border-color:rgba(255,178,36,.3)}
+.tools{display:flex;flex-direction:column;gap:8px}
+.tool{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;padding:11px 12px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid var(--soft)}
+.tool .name{font-size:13px;font-weight:750}
+.tool .name small{color:var(--dim);font-weight:600;margin-right:4px;font-family:var(--mono)}
+.tool .val{font:650 13px var(--mono);direction:ltr;text-align:right;white-space:normal;overflow-wrap:anywhere;color:#e9ecf2}
+.tool .say{grid-column:1/-1;font-size:13.5px;color:#cfd3dc}
+.tool.up{border-color:rgba(0,232,135,.22)}.tool.down{border-color:rgba(255,61,110,.24)}.tool.warn{border-color:rgba(255,178,36,.28)}
+.spark{display:block;width:100%;height:34px;grid-column:1/-1;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.foot{margin-top:12px;font-size:12px;color:var(--dim)}
+.radar-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rrow{padding:12px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid var(--soft);cursor:pointer}
+.rrow:active{transform:scale(.99)}
+.rtop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rtop .s{font:750 15px var(--mono)}
+.rtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:650;border:1px solid var(--soft);background:rgba(255,255,255,.05);color:var(--muted)}
+.tag.up{color:var(--up);background:var(--up-s);border-color:rgba(0,232,135,.3)}
+.tag.down{color:var(--down);background:var(--down-s);border-color:rgba(255,61,110,.3)}
+.tag.warn{color:var(--warn);background:var(--warn-s);border-color:rgba(255,178,36,.3)}
+.tag.info{color:var(--info);background:var(--info-s);border-color:rgba(90,200,250,.3)}
+.progress{height:3px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;width:0;background:var(--info);transition:width .3s}
+.skeleton{color:transparent !important;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:8px}
+@keyframes sh{to{background-position:-200% 0}}
+footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-height:1.7}
+@media (max-width:560px){ .card{padding:16px} .dims{gap:6px} .dim3{padding:9px} .dim3 .v{font-size:13px} }
+@media (max-width:360px){ .brand small{display:none} .dims{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="#5ac8fa" stroke-width="2.4"/><path d="M15.5 15.5l5 5" stroke="#5ac8fa" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+      <div><h1>قارئ أدوات باينانس</h1><small>يقرأ الأدوات ويشرحها — ليس توصية شراء أو بيع</small></div>
+    </div>
+    <div class="status" aria-live="polite"><span class="dot" id="dot"></span><span id="statusText">جاهز</span></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" id="tabCoin" role="tab" aria-selected="true">تحليل عملة</button>
+    <button class="tab" id="tabRadar" role="tab" aria-selected="false">الرادار</button>
+  </nav>
+
+  <!-- ============ COIN TAB ============ -->
+  <section id="paneCoin">
+    <div class="box glass">
+      <div class="inrow">
+        <div class="field">
+          <input id="symInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="الصق اسم العقد… مثل CYSUSDT" aria-label="اسم العقد">
+          <div class="dropdown hidden" id="symList" role="listbox"></div>
+        </div>
+        <button class="btn ghost" id="pasteBtn">لصق</button>
+        <button class="btn primary" id="goBtn">اقرأ</button>
+      </div>
+      <div class="sub-row">
+        <div class="chips" role="tablist" aria-label="فريم الشارت">
+          <button class="chip" data-tf="5m">5m</button><button class="chip active" data-tf="15m">15m</button><button class="chip" data-tf="1h">1h</button>
+        </div>
+        <span class="hint">فريم الشارت لقراءة EMA وRSI والحجم</span>
+      </div>
+      <div id="msg" class="msg hidden" role="alert"></div>
+    </div>
+
+    <section class="card glass hidden" id="result" aria-live="polite">
+      <div class="meta">
+        <div><span class="sym" id="rSym">—</span> <span class="dim">·</span> <span class="n" id="rTf">—</span></div>
+        <div><span class="px" id="rPx">—</span> <span class="n" id="rChg"></span></div>
+      </div>
+      <div class="headline" id="rHead">—</div>
+      <div class="hsub" id="rSub"></div>
+      <div id="rLevel"></div>
+      <div class="dims" id="rDims"></div>
+
+      <div class="block" id="warnBlock"><div class="bh"><span>⚠ تحذيرات</span></div><ul class="list" id="rWarn"></ul></div>
+      <div class="block"><div class="bh"><span>👁 راقب</span></div><ul class="list" id="rWatch"></ul></div>
+      <div class="block" id="sitBlock"><div class="bh"><span>المواقف المكتشفة ونتيجتها التاريخية</span></div><div id="rSits"></div></div>
+      <div class="block"><div class="bh"><span>قراءة أدوات باينانس</span><span class="dim" id="rAge"></span></div><div class="tools" id="rTools"></div></div>
+
+      <div class="actions">
+        <button class="btn ghost sm" id="refreshBtn">تحديث</button>
+        <button class="btn ghost sm" id="copyBtn">نسخ القراءة</button>
+      </div>
+      <div class="foot" id="rFoot"></div>
+    </section>
+  </section>
+
+  <!-- ============ RADAR TAB ============ -->
+  <section id="paneRadar" class="hidden">
+    <div class="box glass">
+      <div class="sub-row" style="margin-top:0">
+        <div><b>رادار النشاط غير الطبيعي</b><div class="hint">يفحص كل عقود USDT الدائمة ويرتبها حسب غرابة النشاط — ليس حسب "أفضل عملة للشراء".</div></div>
+        <button class="btn primary sm" id="scanBtn">افحص الآن</button>
+      </div>
+      <div class="progress"><i id="scanBar"></i></div>
+      <div class="hint" id="scanInfo" style="margin-top:8px"></div>
+    </div>
+    <div class="card glass" id="radarCard"><ul class="radar-list" id="radarList"><li class="hint">اضغط «افحص الآن».</li></ul></div>
+  </section>
+
+  <footer>البيانات من واجهة Binance USDⓈ-M العامة (<span class="n">fapi.binance.com</span>) بدون مفاتيح. هذه قراءة للبيانات وليست توصية؛ اختباراتنا لم تجد أفضلية مضمونة بعد العمولة.</footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* SHARED:BEGIN — pure functions shared with the historical test (no DOM, no network) */
+const SHARED = (() => {
+  const isNum = x => typeof x === 'number' && Number.isFinite(x);
+  function ema(v, n) { // SMA-seeded EMA, k = 2/(n+1)
+    const o = new Array(v.length).fill(NaN); if (v.length < n) return o;
+    const k = 2 / (n + 1); let s = 0; for (let i = 0; i < n; i++) s += v[i];
+    let e = s / n; o[n - 1] = e; for (let i = n; i < v.length; i++) { e = v[i] * k + e * (1 - k); o[i] = e; } return o;
+  }
+  function rsi(c, n) { // Wilder (RMA) RSI — Binance's SMA(X,N,1) convention
+    const o = new Array(c.length).fill(NaN); if (c.length <= n) return o;
+    let g = 0, l = 0; for (let i = 1; i <= n; i++) { const d = c[i] - c[i - 1]; if (d > 0) g += d; else l -= d; }
+    let ag = g / n, al = l / n; const f = (a, b) => b === 0 ? (a === 0 ? 50 : 100) : 100 - 100 / (1 + a / b); o[n] = f(ag, al);
+    for (let i = n + 1; i < c.length; i++) { const d = c[i] - c[i - 1]; ag = (ag * (n - 1) + (d > 0 ? d : 0)) / n; al = (al * (n - 1) + (d < 0 ? -d : 0)) / n; o[i] = f(ag, al); }
+    return o;
+  }
+  function atr(h, l, c, n) { // Wilder ATR
+    const o = new Array(c.length).fill(NaN); if (c.length <= n) return o;
+    const tr = [0]; for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i - 1]), Math.abs(l[i] - c[i - 1])));
+    let s = 0; for (let i = 1; i <= n; i++) s += tr[i]; let a = s / n; o[n] = a;
+    for (let i = n + 1; i < c.length; i++) { a = (a * (n - 1) + tr[i]) / n; o[i] = a; } return o;
+  }
+  function sma(v, n) { const o = new Array(v.length).fill(NaN); let s = 0; for (let i = 0; i < v.length; i++) { s += v[i]; if (i >= n) s -= v[i - n]; if (i >= n - 1) o[i] = s / n; } return o; }
+  // last element with t <= ts (binary search); series sorted ascending by t
+  function idxAt(series, ts) { let lo = 0, hi = series.length - 1, a = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (series[m].t <= ts) { a = m; lo = m + 1; } else hi = m - 1; } return a; }
+  const valAt = (series, ts) => { const i = idxAt(series, ts); return i < 0 ? NaN : series[i].v; };
+
+  /** Precompute everything once. k5/k15: CLOSED candles {t,o,h,l,c,v,tb,ct}; metrics: arrays of {t,v} ascending. */
+  function buildSeries(k5, k15, m) {
+    const n = k5.c.length, pv = new Float64Array(n + 1), pq = new Float64Array(n + 1), pt = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) { pv[i + 1] = pv[i] + k5.v[i]; pq[i + 1] = pq[i] + (k5.qv ? k5.qv[i] : k5.v[i] * k5.c[i]); pt[i + 1] = pt[i] + k5.tb[i]; }
+    const e7 = ema(k15.c, 7), e25 = ema(k15.c, 25), e99 = ema(k15.c, 99), a15 = atr(k15.h, k15.l, k15.c, 14);
+    return { k5, k15, pv, pq, pt, e7, e25, e99, a15, oi: m.oi || [], gls: m.gls || [], tpos: m.tpos || [] };
+  }
+  const SIT = {
+    S1:  { dir: -1, name: 'ازدحام لونج متأخر', desc: 'صعود قوي خلال 4 ساعات مع دخول مراكز جديدة وتمويل مرتفع، والجمهور يزيد اللونج.' },
+    S1b: { dir: 1,  name: 'ازدحام شورت متأخر', desc: 'هبوط قوي خلال 4 ساعات مع مراكز جديدة وتمويل سالب، والجمهور يزيد الشورت.' },
+    S2:  { dir: 1,  name: 'وقود سكويز للشورت', desc: 'السعر ثابت أو يصعد، والفائدة المفتوحة ترتفع، والتمويل سالب، والجمهور مائل للشورت.' },
+    S3:  { dir: -1, name: 'الكبار يبيعون للجمهور', desc: 'حسابات الكبار تقلل اللونج بينما الجمهور يزيده، والسعر شبه ثابت.' },
+    S3b: { dir: 1,  name: 'الكبار يشترون من الجمهور', desc: 'حسابات الكبار تزيد اللونج بينما الجمهور يقلله، والسعر شبه ثابت.' },
+    S4:  { dir: -1, name: 'صعود بإغلاق شورتات', desc: 'السعر صعد خلال ساعة لكن الفائدة المفتوحة نزلت — الحركة من إغلاق مراكز وليست أموالاً جديدة.' },
+    S4b: { dir: 1,  name: 'تصفية لونجات', desc: 'هبوط حاد خلال ساعة مع خروج كبير للمراكز وحجم مرتفع جداً.' },
+    S5:  { dir: 1,  name: 'اتجاه صاعد صحي', desc: 'المتوسطات مرتبة صعوداً، والمراكز تزيد بهدوء، والتمويل معتدل، والسعر قريب من EMA25.' },
+    S5b: { dir: -1, name: 'اتجاه هابط صحي', desc: 'المتوسطات مرتبة هبوطاً، والمراكز تزيد بهدوء، والتمويل معتدل، والسعر قريب من EMA25.' },
+    S6:  { dir: -1, name: 'امتصاص عند القمة', desc: 'شراء عدواني قوي لكن السعر لا يتحرك، وهو عند قمة 24 ساعة.' },
+    S7:  { dir: 0,  name: 'اندفاع يبرد', desc: 'صعدت 10%+ خلال 4 ساعات بحجم ضخم، والحين نازلة عن القمة والحجم هدأ.' },
+  };
+  /** Features + detected situations at closed 5m index i. f8 = funding normalised to 8h (fraction). */
+  function detectAt(S, i, f8, full = false) {
+    const k = S.k5; if (i < 300) return null;
+    const c = k.c[i], T = k.ct[i] + 1;
+    const vol24 = S.pq[i + 1] - S.pq[i + 1 - 288];
+    const P1h = c / k.c[i - 12] - 1, P4h = c / k.c[i - 48] - 1;
+    const VS1h = (S.pv[i + 1] - S.pv[i - 11]) / ((S.pv[i - 11] - S.pv[i - 299]) / 24);
+    const sell1h = (S.pv[i + 1] - S.pv[i - 11]) - (S.pt[i + 1] - S.pt[i - 11]);
+    const TK1h = sell1h > 0 ? (S.pt[i + 1] - S.pt[i - 11]) / sell1h : NaN;
+    const ch = (ser, back) => { const j = idxAt(ser, T); if (j < 0) return { now: NaN, d: NaN, age: NaN }; const now = ser[j].v, prev = valAt(ser, ser[j].t - back); return { now, d: prev > 0 ? (now / prev - 1) : NaN, prev, age: T - ser[j].t }; };
+    const oi1 = ch(S.oi, 36e5), oi4 = ch(S.oi, 4 * 36e5), oi24 = ch(S.oi, 24 * 36e5), g4 = ch(S.gls, 4 * 36e5), tp4 = ch(S.tpos, 4 * 36e5);
+    const x = { c, T, vol24, P1h, P4h, VS1h, TK1h, F8: f8, OI: oi1.now, OI1h: oi1.d, OI4h: oi4.d, OI24h: oi24.d, GLS: g4.now, GLSd4h: g4.d, GLS4hAgo: g4.prev, TPOS: tp4.now, TPOSd4h: tp4.d, metricsAge: oi1.age };
+    // 15m context (latest CLOSED 15m candle at or before T)
+    let lo = 0, hi = S.k15.ct.length - 1, j = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (S.k15.ct[m] < T) { j = m; lo = m + 1; } else hi = m - 1; }
+    if (j >= 0) { x.e7 = S.e7[j]; x.e25 = S.e25[j]; x.e99 = S.e99[j]; x.atr15 = S.a15[j]; }
+    const need24 = full || (TK1h >= 1.5 && Math.abs(P1h) <= 0.005);
+    if (need24) { let H = -Infinity, L = Infinity; for (let q = i - 287; q <= i; q++) { if (k.h[q] > H) H = k.h[q]; if (k.l[q] < L) L = k.l[q]; } x.H24 = H; x.L24 = L; }
+    const need4 = full || P4h >= 0.10;
+    if (need4) { let H = -Infinity, mv = 0; for (let q = i - 47; q <= i; q++) { if (k.h[q] > H) H = k.h[q]; } for (let q = i - 47; q <= i - 11; q++) { const v = S.pv[q + 12] - S.pv[q]; if (v > mv) mv = v; }
+      x.H4 = H; x.maxVol1hRatio = mv / ((S.pv[i - 11] - S.pv[i - 299]) / 24); }
+    const s = [];
+    if (vol24 >= 5e6) {
+      const gUp = isNum(x.GLS4hAgo) && x.GLS > x.GLS4hAgo, gDn = isNum(x.GLS4hAgo) && x.GLS < x.GLS4hAgo;
+      if (P4h >= 0.08 && x.OI4h >= 0.10 && f8 >= 0.0003 && gUp) s.push('S1');
+      if (P4h <= -0.08 && x.OI4h >= 0.10 && f8 <= -0.0003 && gDn) s.push('S1b');
+      if (P4h >= 0 && x.OI4h >= 0.05 && f8 <= -0.0003 && x.GLS <= 0.9) s.push('S2');
+      if (x.TPOSd4h <= -0.05 && x.GLSd4h >= 0.05 && Math.abs(P4h) <= 0.03) s.push('S3');
+      if (x.TPOSd4h >= 0.05 && x.GLSd4h <= -0.05 && Math.abs(P4h) <= 0.03) s.push('S3b');
+      if (P1h >= 0.03 && x.OI1h <= -0.03) s.push('S4');
+      if (P1h <= -0.05 && x.OI1h <= -0.08 && VS1h >= 3) s.push('S4b');
+      if (isNum(x.e99) && isNum(x.atr15)) {
+        const near = Math.abs(c - x.e25) <= 1.5 * x.atr15, oiOk = x.OI4h >= 0.02 && x.OI4h <= 0.10;
+        if (x.e7 > x.e25 && x.e25 > x.e99 && oiOk && f8 >= 0 && f8 <= 0.0003 && near) s.push('S5');
+        if (x.e7 < x.e25 && x.e25 < x.e99 && oiOk && f8 >= -0.0003 && f8 <= 0.0001 && near) s.push('S5b');
+      }
+      if (TK1h >= 1.5 && Math.abs(P1h) <= 0.005 && c >= x.L24 + 0.95 * (x.H24 - x.L24)) s.push('S6');
+      if (P4h >= 0.10 && x.maxVol1hRatio >= 4 && c <= 0.95 * x.H4 && VS1h <= 1) s.push('S7');
+    }
+    x.sits = s;
+    return x;
+  }
+  return { isNum, ema, rsi, atr, sma, idxAt, valAt, buildSeries, detectAt, SIT };
+})();
+/* SHARED:END */
+
+/* ===================== CONFIG / STATE ===================== */
+const { isNum, ema, rsi, sma, buildSeries, detectAt, SIT, idxAt, valAt } = SHARED;
+const API = 'https://fapi.binance.com';
+const TF_MS = { '5m': 3e5, '15m': 9e5, '1h': 36e5 };
+const REQ_TIMEOUT = 8000;
+// Historical outcome of each situation: 90 USDT perpetuals, Nov 2025 – Oct 2026, detection code = SHARED block above.
+// m60 = mean price change 60 min later; up = % of cases higher after 60 min (normal for any moment ≈ 47.7%).
+// confirmed = on the expected side of the baseline in BOTH halves of the year, ≥100 cases each, ≥20 coins.
+const SIT_BASE_UP = 47.7;
+const SIT_STATS = {"S1":{"n":18,"coins":5,"m60":-0.01628,"up":38.9,"confirmed":false},"S1b":{"n":26,"coins":14,"m60":0.00866,"up":61.5,"confirmed":false},"S2":{"n":470,"coins":36,"m60":0.00069,"up":42.3,"confirmed":false},"S3":{"n":6999,"coins":90,"m60":-0.00101,"up":45.2,"confirmed":true},"S3b":{"n":7050,"coins":90,"m60":0.00086,"up":51.1,"confirmed":true},"S4":{"n":677,"coins":88,"m60":-0.00065,"up":45.9,"confirmed":false},"S4b":{"n":165,"coins":57,"m60":-0.00321,"up":49.7,"confirmed":false},"S5":{"n":13830,"coins":90,"m60":0.00069,"up":48.2,"confirmed":true},"S5b":{"n":15193,"coins":90,"m60":-0.00013,"up":48,"confirmed":false},"S6":{"n":1352,"coins":73,"m60":-0.00006,"up":47.6,"confirmed":false},"S7":{"n":24,"coins":16,"m60":0.00113,"up":37.5,"confirmed":false}};
+const state = { tf: '15m', symbol: '', universe: new Map(), universeOK: false, vols: {}, fundingHours: {}, clockOffset: 0, seq: 0, ctrl: null, busy: false, last: null, ddItems: [], ddIdx: -1, radar: null, scanning: false };
+const serverNow = () => Date.now() + state.clockOffset;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem('rd:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('rd:' + k, JSON.stringify(v)); } catch (e) { /* blocked */ } } };
+const N = (v, cls = '') => `<span class="n ${cls}">${v}</span>`;
+const pct = (x, d = 2) => !isNum(x) ? '—' : (x > 0 ? '+' : '') + (x * 100).toFixed(d) + '%';
+const pctRaw = (x, d = 2) => !isNum(x) ? '—' : (x > 0 ? '+' : '') + x.toFixed(d) + '%';
+function compact(x) { if (!isNum(x)) return '—'; const a = Math.abs(x); return a >= 1e9 ? (x / 1e9).toFixed(2) + 'B' : a >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : a >= 1e3 ? (x / 1e3).toFixed(1) + 'K' : x.toFixed(2); }
+function tickDec(t) { const s = String(t); if (s.includes('e-')) return parseInt(s.split('e-')[1], 10); const i = s.indexOf('.'); return i < 0 ? 0 : s.slice(i + 1).replace(/0+$/, '').length; }
+const autoDec = p => { const a = Math.abs(p); return a >= 1000 ? 2 : a >= 100 ? 3 : a >= 1 ? 4 : a >= 0.1 ? 5 : a >= 0.01 ? 6 : 8; };
+function fmtP(p, sym = state.symbol) { if (!isNum(p)) return '—'; const m = state.universe.get(sym); const d = m && isNum(m.dec) ? m.dec : autoDec(p); return p.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+const dur = ms => { if (!isNum(ms) || ms <= 0) return '00:00'; const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+
+/* ===================== NETWORK ===================== */
+class ApiError extends Error { constructor(m, st, kind) { super(m); this.status = st; this.kind = kind; } }
+async function apiOnce(path, signal) {
+  const ctrl = new AbortController(); let to = false; const t = setTimeout(() => { to = true; ctrl.abort(); }, REQ_TIMEOUT);
+  const onA = () => ctrl.abort(); if (signal) { if (signal.aborted) ctrl.abort(); else signal.addEventListener('abort', onA, { once: true }); }
+  try {
+    const r = await fetch(API + path, { signal: ctrl.signal, cache: 'no-store' });
+    if (!r.ok) { let d = ''; try { const j = await r.json(); if (j && j.msg) d = j.msg; } catch (e) { /* not json */ }
+      throw new ApiError(`HTTP ${r.status}${d ? ' — ' + d : ''}`, r.status, r.status === 429 ? 'ratelimit' : r.status === 418 ? 'banned' : (r.status === 451 || r.status === 403) ? 'geo' : r.status === 400 ? 'bad' : 'http'); }
+    return await r.json();
+  } catch (e) { if (e instanceof ApiError) throw e; if (e && e.name === 'AbortError') throw new ApiError(to ? 'انتهت المهلة' : 'أُلغي', 0, to ? 'timeout' : 'abort'); throw new ApiError('تعذر الاتصال', 0, 'network'); }
+  finally { clearTimeout(t); if (signal) signal.removeEventListener('abort', onA); }
+}
+async function api(path, signal, retries = 1) {
+  try { return await apiOnce(path, signal); }
+  catch (e) { if (retries > 0 && (e.kind === 'network' || e.kind === 'timeout' || (e.kind === 'http' && e.status >= 500)) && !(signal && signal.aborted)) { await new Promise(r => setTimeout(r, 700)); return api(path, signal, retries - 1); } throw e; }
+}
+function explain(e) {
+  switch (e && e.kind) {
+    case 'geo': return 'باينانس فيوتشر غير متاح من موقعك أو شبكتك (' + e.status + '). جرّب شبكة أخرى.';
+    case 'ratelimit': return 'باينانس حدّ الطلبات مؤقتاً (429) — انتظر دقيقة.';
+    case 'banned': return 'باينانس حظر عنوانك مؤقتاً (418) بسبب كثرة الطلبات — انتظر عدة دقائق.';
+    case 'timeout': return 'انتهت مهلة الاتصال بباينانس — أعد المحاولة.';
+    case 'network': return 'تعذر الاتصال بباينانس — تحقق من الإنترنت.';
+    case 'bad': return 'باينانس رفض الطلب: ' + esc(e.message) + '.';
+    default: return 'خطأ من الخادم: ' + esc(e ? e.message : 'غير معروف');
+  }
+}
+
+/* ===================== SYMBOLS ===================== */
+const AR = { '٠': 0, '١': 1, '٢': 2, '٣': 3, '٤': 4, '٥': 5, '٦': 6, '٧': 7, '٨': 8, '٩': 9, '۰': 0, '۱': 1, '۲': 2, '۳': 3, '۴': 4, '۵': 5, '۶': 6, '۷': 7, '۸': 8, '۹': 9 };
+function cleanInput(raw) {
+  let s = String(raw || '').normalize('NFKC').replace(/[٠-٩۰-۹]/g, d => AR[d]).trim();
+  const url = s.match(/https?:\/\/[^\s]+/i) || s.match(/(?:www\.)?binance\.[a-z.]+\/[^\s]+/i);
+  if (url) { try { const u = new URL(url[0].startsWith('http') ? url[0] : 'https://' + url[0]); const segs = u.pathname.split('/').filter(Boolean).map(decodeURIComponent); s = u.searchParams.get('symbol') || [...segs].reverse().find(x => /USD[TC]/i.test(x)) || segs[segs.length - 1] || ''; } catch (e) { /* not a url */ } }
+  s = s.toUpperCase().replace(/_\d{6}\b/g, '').replace(/PERPETUAL|PERP|SWAP|FUTURES|FUTURE|永续|合约|دائم|عقد|آجل|فيوتشر/g, ' ');
+  return s.replace(/[^A-Z0-9㐀-鿿]/g, '');
+}
+function resolveSymbol(raw) {
+  const tok = cleanInput(raw); if (!tok) return { err: /[؀-ۿ]/.test(String(raw)) ? 'arabic' : 'empty' };
+  const base = tok.replace(/(USDT|USDC)$/, '') || tok;
+  const order = [tok, base + 'USDT', '1000' + base + 'USDT', '1000000' + base + 'USDT', '1M' + base + 'USDT', base + 'USDC'];
+  if (state.universeOK) { for (const c of order) if (state.universe.has(c)) return { symbol: c }; return { err: 'notfound', tok, sugs: suggest(base) }; }
+  return { symbol: /(USDT|USDC)$/.test(tok) ? tok : tok + 'USDT' };
+}
+function suggest(base) {
+  const out = []; for (const m of state.universe.values()) { const b = m.base.replace(/^1000000|^1000|^1M/, ''); const sc = b === base ? 0 : (b.startsWith(base) || base.startsWith(b)) ? 1 : b.includes(base) ? 2 : 99; if (sc < 99) out.push({ s: m.symbol, sc, v: state.vols[m.symbol] || 0 }); }
+  return out.sort((a, b) => a.sc - b.sc || b.v - a.v).slice(0, 6).map(x => x.s);
+}
+async function loadUniverse() {
+  const [info, tick, fi] = await Promise.allSettled([api('/fapi/v1/exchangeInfo'), api('/fapi/v1/ticker/24hr'), api('/fapi/v1/fundingInfo')]);
+  if (info.status === 'fulfilled' && info.value && Array.isArray(info.value.symbols)) {
+    const map = new Map();
+    for (const s of info.value.symbols) {
+      if (s.contractType !== 'PERPETUAL' || s.status !== 'TRADING' || (s.quoteAsset !== 'USDT' && s.quoteAsset !== 'USDC')) continue;
+      const pf = (s.filters || []).find(f => f.filterType === 'PRICE_FILTER');
+      map.set(s.symbol, { symbol: s.symbol, base: s.baseAsset, quote: s.quoteAsset, dec: pf ? tickDec(pf.tickSize) : NaN, onboard: +s.onboardDate || 0 });
+    }
+    if (map.size) { state.universe = map; state.universeOK = true; }
+  }
+  if (tick.status === 'fulfilled' && Array.isArray(tick.value)) for (const t of tick.value) state.vols[t.symbol] = +t.quoteVolume || 0;
+  if (fi.status === 'fulfilled' && Array.isArray(fi.value)) for (const f of fi.value) if (+f.fundingIntervalHours > 0) state.fundingHours[f.symbol] = +f.fundingIntervalHours;
+}
+
+/* ===================== DATA HELPERS ===================== */
+function parseK(raw, now, { closedOnly = true } = {}) {
+  const k = { t: [], o: [], h: [], l: [], c: [], v: [], qv: [], tb: [], ct: [] };
+  for (const r of raw) { if (closedOnly && +r[6] >= now) continue; k.t.push(+r[0]); k.o.push(+r[1]); k.h.push(+r[2]); k.l.push(+r[3]); k.c.push(+r[4]); k.v.push(+r[5]); k.ct.push(+r[6]); k.qv.push(+r[7]); k.tb.push(+r[9]); }
+  return k;
+}
+const ser = (arr, key) => Array.isArray(arr) ? arr.map(x => ({ t: +x.timestamp, v: +x[key] })).filter(x => isNum(x.v)).sort((a, b) => a.t - b.t) : [];
+
+/* ===================== READOUT ===================== */
+/** Turns raw Binance data into a plain-language readout. No buy/sell verdicts. */
+function readout(D) {
+  const tf = D.tf, ch = D.chart, L = ch.c.length - 1, c = ch.c[L];   // chart uses the live candle, like the Binance app
+  const e7 = ema(ch.c, 7), e25 = ema(ch.c, 25), e99 = ema(ch.c, 99);
+  const r6 = rsi(ch.c, 6), r12 = rsi(ch.c, 12), r24 = rsi(ch.c, 24), m5 = sma(ch.v, 5), m10 = sma(ch.v, 10);
+  const E7 = e7[L], E25 = e25[L], E99 = e99[L], R6 = r6[L], R12 = r12[L], R24 = r24[L];
+  const X = D.x || {};
+  const out = { tools: [], warns: [], watch: [], dims: [], sits: (X.sits || []).slice().sort((a, b) => ((SIT_STATS && SIT_STATS[b] && SIT_STATS[b].confirmed) ? 1 : 0) - ((SIT_STATS && SIT_STATS[a] && SIT_STATS[a].confirmed) ? 1 : 0)) };
+
+  // ---- EMA ----
+  const stackUp = E7 > E25 && E25 > E99, stackDn = E7 < E25 && E25 < E99;
+  const dist25 = (c / E25 - 1);
+  const trendTxt = stackUp ? 'المتوسطات مرتبة صعوداً (7 فوق 25 فوق 99) — الاتجاه صاعد.' : stackDn ? 'المتوسطات مرتبة هبوطاً — الاتجاه هابط.' : 'المتوسطات متداخلة — لا اتجاه واضح.';
+  const pos = c > E7 ? 'فوق كل المتوسطات تقريباً' : c > E25 ? 'تحت EMA7 وفوق EMA25 — الزخم يهدأ' : c > E99 ? 'تحت EMA25 وفوق EMA99' : 'تحت كل المتوسطات';
+  out.tools.push({ k: 'المتوسطات', sub: 'EMA 7/25/99', tone: stackUp ? 'up' : stackDn ? 'down' : '', val: `${fmtP(E7)} / ${fmtP(E25)} / ${fmtP(E99)}`,
+    say: `${trendTxt} السعر ${pos}${Math.abs(dist25) > 0.05 ? ` — ممتد ${N(pct(dist25, 1))} عن EMA25` : ''}.` });
+  // ---- RSI ----
+  const r6max = Math.max(...r6.slice(-7, -1).filter(isNum)), r6min = Math.min(...r6.slice(-7, -1).filter(isNum));
+  let rsiSay = R6 >= 80 ? 'متشبع شراء على المدى القصير جداً.' : R6 <= 20 ? 'متشبع بيع على المدى القصير جداً.' : (r6max >= 80 && R6 < R24) ? 'كان متشبع شراء والحين يبرد (RSI6 نزل تحت RSI24).' : (r6min <= 20 && R6 > R24) ? 'كان متشبع بيع والحين يرتد.' : 'في المنطقة الطبيعية.';
+  rsiSay += ` الميل العام ${R24 >= 50 ? 'إيجابي' : 'سلبي'} (RSI24 ${R24 >= 50 ? 'فوق' : 'تحت'} 50).`;
+  out.tools.push({ k: 'القوة النسبية', sub: 'RSI 6/12/24', tone: R6 >= 80 || R6 <= 20 ? 'warn' : '', val: `${R6.toFixed(1)} / ${R12.toFixed(1)} / ${R24.toFixed(1)}`, say: rsiSay });
+  // ---- Volume ----
+  const vNow = ch.v[L], vRatio = vNow / m5[L - 1], spikeIdx = (() => { for (let q = L; q >= L - 4; q--) if (ch.v[q] >= 3 * m10[q - 1]) return q; return -1; })();
+  const volSay = spikeIdx >= 0 && spikeIdx < L && vNow < 0.6 * m5[L] ? `كان فيه انفجار حجم قبل ${L - spikeIdx} شموع، والحين الحجم أقل من متوسطه — الاندفاع هدأ.`
+    : spikeIdx === L ? 'انفجار حجم في الشمعة الحالية (3× المتوسط أو أكثر).' : vRatio >= 1.5 ? 'الحجم أعلى من المعتاد — مشاركة قوية.' : vRatio <= 0.5 ? 'الحجم ضعيف مقارنة بالمعتاد.' : 'الحجم قريب من المعتاد.';
+  out.tools.push({ k: 'الحجم', sub: 'VOL · MA5/MA10', tone: spikeIdx >= 0 ? 'warn' : '', val: `${compact(vNow)} · ${compact(m5[L])}/${compact(m10[L])}`, say: volSay + ' (الشمعة الحالية لم تغلق بعد.)' });
+  // ---- Funding ----
+  const fr = D.funding, hours = D.fundingHours, f8 = fr * 8 / hours;
+  const fSay = !isNum(fr) ? 'غير متاح.' : f8 >= 0.0005 ? 'مرتفع جداً — اللونجات مزدحمة وتدفع كثير، وهذا وقود لهبوط مفاجئ.' : f8 <= -0.0005 ? 'سالب بقوة — الشورتات مزدحمة، وهذا وقود لسكويز صعود.' : f8 > 0.0001 ? 'أعلى من الطبيعي قليلاً — ميل للونج.' : f8 < 0 ? 'سالب — ميل للشورت.' : 'طبيعي.';
+  out.tools.push({ k: 'التمويل', sub: 'Funding', tone: Math.abs(f8) >= 0.0005 ? 'warn' : '', val: `${pct(fr, 4)} / ${hours}h`,
+    say: `${fSay} التسوية بعد ${N(dur(D.nextFunding - serverNow()))}${hours < 8 ? ` — ⚠ مدة التمويل ${hours} ساعات بدل 8، وباينانس يقصّرها لما السوق مزدحم.` : ''}` });
+  // ---- Open interest ----
+  if (isNum(X.OI)) {
+    const usd = X.OI * c, p1 = X.P1h, o1 = X.OI1h, o4 = X.OI4h, p4 = X.P4h;
+    const regime = (p, o) => (p > 0.005 && o > 0.01) ? 'السعر ↑ والمراكز ↑: أموال جديدة تدخل لونج' : (p > 0.005 && o < -0.01) ? 'السعر ↑ والمراكز ↓: إغلاق شورتات (حركة أضعف)' : (p < -0.005 && o > 0.01) ? 'السعر ↓ والمراكز ↑: شورتات جديدة تدخل' : (p < -0.005 && o < -0.01) ? 'السعر ↓ والمراكز ↓: لونجات تطلع/تتصفى' : 'لا تغيّر مهم';
+    out.tools.push({ k: 'الفائدة المفتوحة', sub: 'O.I.', tone: Math.abs(o4) >= 0.1 ? 'warn' : '', val: `$${compact(usd)} · 1h ${pct(o1, 1)} · 4h ${pct(o4, 1)}`,
+      say: `آخر ساعة: ${regime(p1, o1)}. آخر 4 ساعات: ${regime(p4, o4)}.`, spark: D.m.oi.slice(-48).map(x => x.v) });
+  } else out.tools.push({ k: 'الفائدة المفتوحة', sub: 'O.I.', tone: '', val: '—', say: 'غير متاحة الآن.' });
+  // ---- Crowd: global L/S accounts ----
+  const glsMean = D.m.gls.length ? D.m.gls.reduce((a, x) => a + x.v, 0) / D.m.gls.length : NaN;
+  const glsRel = isNum(glsMean) && glsMean > 0 ? X.GLS / glsMean - 1 : NaN;
+  const crowdLong = isNum(X.GLS) && (X.GLS >= 3 || (X.GLS >= 1.5 && glsRel >= 0.15)), crowdShort = isNum(X.GLS) && (X.GLS <= 0.6 || (X.GLS <= 1 && glsRel <= -0.15));
+  if (isNum(X.GLS)) {
+    const longPct = X.GLS / (1 + X.GLS) * 100;
+    let gSay = `${longPct.toFixed(0)}% من الحسابات لونج.`;
+    gSay += crowdLong ? ' الجمهور يزيد اللونج بوضوح عن معدله — قراءة عكسية: وقود محتمل لهبوط.' : crowdShort ? ' الجمهور يزيد الشورت بوضوح عن معدله — وقود محتمل لسكويز صعود.' : ' قريب من معدله المعتاد لهذه العملة.';
+    out.tools.push({ k: 'الجمهور', sub: 'L.S Ratio', tone: crowdLong || crowdShort ? 'warn' : '', val: `${X.GLS.toFixed(2)} · avg24h ${isNum(glsMean) ? glsMean.toFixed(2) : '—'} · 4h ${pct(X.GLSd4h, 1)}`, say: gSay, spark: D.m.gls.slice(-48).map(x => x.v) });
+  }
+  // ---- Big accounts ----
+  if (isNum(X.TPOS)) {
+    const tacc = D.m.tacc.length ? D.m.tacc[D.m.tacc.length - 1].v : NaN;
+    let s = X.TPOS > 1.2 ? 'الحسابات الكبيرة (بحجم المراكز) مائلة للونج.' : X.TPOS < 0.85 ? 'الحسابات الكبيرة مائلة للشورت.' : 'الحسابات الكبيرة متوازنة.';
+    if (X.TPOSd4h <= -0.05 && X.GLSd4h >= 0.05) s += ' ⚠ الكبار يقللون اللونج بينما الجمهور يزيده.';
+    else if (X.TPOSd4h >= 0.05 && X.GLSd4h <= -0.05) s += ' الكبار يزيدون اللونج بينما الجمهور يقلله.';
+    s += ' (أكبر 20% من الحسابات في باينانس — وليست محافظ على البلوكتشين.)';
+    out.tools.push({ k: 'كبار المتداولين', sub: 'L.S Posit. / Acco.', tone: '', val: `${X.TPOS.toFixed(2)} / ${isNum(tacc) ? tacc.toFixed(2) : '—'} · 4h ${pct(X.TPOSd4h, 1)}`, say: s, spark: D.m.tpos.slice(-48).map(x => x.v) });
+  }
+  // ---- Taker ----
+  const tk = D.m.taker, tkLast = tk.slice(-12), tb = tkLast.reduce((a, r) => a + r.b, 0), ts = tkLast.reduce((a, r) => a + r.s, 0), tkR = ts > 0 ? tb / ts : X.TK1h;
+  const tk3 = tk.slice(-3).map(r => r.s > 0 ? r.b / r.s : NaN);
+  const tSay = (tk3.length === 3 && tk3.every(v => v >= 1.3)) ? 'المشترون العدوانيون مسيطرون باستمرار (آخر 3 فترات).' : (tk3.length === 3 && tk3.every(v => v <= 0.7)) ? 'البائعون العدوانيون مسيطرون باستمرار.' : tkR >= 1.15 ? 'ميل للشراء العدواني.' : tkR <= 0.87 ? 'ميل للبيع العدواني.' : 'متوازن.';
+  out.tools.push({ k: 'ضغط الشراء والبيع', sub: 'B.S Vol.', tone: tkR >= 1.3 ? 'up' : tkR <= 0.7 ? 'down' : '', val: `${isNum(tkR) ? tkR.toFixed(2) : '—'} · 1h`, say: 'نسبة الشراء العدواني إلى البيع العدواني آخر ساعة: ' + tSay + (Math.abs(X.P1h) < 0.003 && tkR >= 1.5 ? ' ⚠ شراء قوي والسعر لا يتحرك = امتصاص.' : '') });
+  // ---- Basis ----
+  if (isNum(D.basisRate)) {
+    const b = D.basisRate;
+    out.tools.push({ k: 'الفرق عن السعر الفوري', sub: 'Basis', tone: Math.abs(b) >= 0.003 ? 'warn' : '', val: pct(b, 3),
+      say: b >= 0.003 ? 'العقد أغلى من الفوري بوضوح — حماس بالرافعة.' : b <= -0.003 ? 'العقد أرخص من الفوري — ضغط بيع/شورت بالرافعة.' : 'طبيعي.' });
+  }
+
+  // ---- Dimensions (state, not advice) ----
+  const mom = stackUp && c > E25 ? ['صاعد', 'up'] : stackDn && c < E25 ? ['هابط', 'down'] : ['محايد', ''];
+  const crowd = (crowdLong || f8 >= 0.0005) ? ['مزدحم لونج', 'warn'] : (crowdShort || f8 <= -0.0005) ? ['مزدحم شورت', 'warn'] : ['طبيعي', ''];
+  const cost = Math.abs(f8) >= 0.0005 ? ['تمويل متطرف', 'warn'] : hours < 8 ? ['مدة تمويل قصيرة', 'warn'] : ['طبيعي', ''];
+  out.dims = [['الزخم', ...mom], ['الجمهور', ...crowd], ['التكلفة', ...cost]];
+
+  // ---- Warnings ----
+  const W = (lvl, t) => out.warns.push({ lvl, t });
+  const vol24 = X.vol24 || D.vol24;
+  if (vol24 < 10e6) W('danger', `سيولة ضعيفة جداً: ${N('$' + compact(vol24))} خلال 24 ساعة — انزلاق وتلاعب محتمل.`);
+  else if (vol24 < 30e6) W('warn', `سيولة متوسطة: ${N('$' + compact(vol24))} خلال 24 ساعة.`);
+  if (isNum(X.OI) && X.OI * c < 5e6) W('danger', `الفائدة المفتوحة صغيرة (${N('$' + compact(X.OI * c))}) — محفظة واحدة تقدر تحرك السعر.`);
+  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `تحركت ${N(pct(X.P4h, 1))} خلال 4 ساعات — مطاردة الحركة خطرة.`);
+  if (Math.abs(f8) >= 0.0005) W('warn', `تمويل متطرف (${N(pct(f8, 3))} لكل 8 ساعات).`);
+  if (hours < 8) W('warn', `مدة التمويل ${hours} ساعات — السوق مزدحم في جهة واحدة.`);
+  if (isNum(D.spreadPct) && D.spreadPct > 0.1) W('danger', `فرق السعر بين الشراء والبيع واسع (${N(D.spreadPct.toFixed(3) + '%')}).`);
+  if (D.onboard && serverNow() - D.onboard < 30 * 864e5) W('warn', `عقد جديد (أدرج قبل ${Math.max(1, Math.round((serverNow() - D.onboard) / 864e5))} يوم) — بياناته التاريخية قليلة.`);
+  if (isNum(D.markLastGap) && Math.abs(D.markLastGap) > 0.005) W('warn', `فرق كبير بين سعر العلامة وآخر سعر (${N(pct(D.markLastGap, 2))}) — خطر تصفية غير متوقعة.`);
+  if (isNum(X.metricsAge) && X.metricsAge > 20 * 60000) W('warn', `بيانات الحيتان والفائدة المفتوحة قديمة (${Math.round(X.metricsAge / 60000)} دقيقة).`);
+  if (spikeIdx >= 0 && ch.h[spikeIdx] - ch.l[spikeIdx] > 4 * (ch.h.slice(-30, -5).reduce((a, h, q) => a + h - ch.l.slice(-30, -5)[q], 0) / 25)) W('warn', 'شمعة عنيفة جداً مقارنة بالمعتاد — ممكن خبر أو تلاعب.');
+  // ---- Watch ----
+  const recentHi = Math.max(...ch.h.slice(-50)), recentLo = Math.min(...ch.l.slice(-50));
+  if (c > E25) out.watch.push(`الثبات فوق ${N(fmtP(E25))} (EMA25) أو كسره${isNum(E99) && E99 < E25 ? ` — تحته ${N(fmtP(E99))} (EMA99)` : ''}.`);
+  else out.watch.push(`استعادة ${N(fmtP(E25))} (EMA25) أو البقاء تحتها${isNum(E99) && E99 < c ? ` — والدعم ${N(fmtP(E99))} (EMA99)` : ''}.`);
+  out.watch.push(`أعلى سعر قريب ${N(fmtP(recentHi))} وأدنى سعر ${N(fmtP(recentLo))} (آخر 50 شمعة ${tf}).`);
+  if (isNum(X.OI1h)) out.watch.push('هل الفائدة المفتوحة تكمل في نفس الاتجاه؟ تغيّرها مع السعر يحدد قوة الحركة.');
+
+  // ---- Headline & level ----
+  const danger = out.warns.some(w => w.lvl === 'danger'), alerts = out.warns.length;
+  out.level = danger ? ['danger', 'خطر'] : (alerts >= 2 || out.sits.some(s => SIT[s].dir !== 1 && s !== 'S5')) ? ['alert', 'انتبه'] : alerts ? ['alert', 'انتبه'] : ['calm', 'هادئ'];
+  if (out.sits.length) { const s = SIT[out.sits[0]]; out.head = s.name; out.sub = s.desc; }
+  else if (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) { out.head = X.P1h > 0 ? 'اندفاع صاعد قوي' : 'هبوط حاد'; out.sub = `تحركت ${N(pct(X.P1h, 1))} خلال ساعة بحجم ${N(X.VS1h.toFixed(1) + '×')} المعتاد.`; }
+  else if (stackUp) { out.head = c < E25 ? 'اتجاه صاعد يضعف' : 'اتجاه صاعد'; out.sub = trendTxt + (c < E25 ? ' لكن السعر نزل تحت EMA25 — الاتجاه يضعف.' : c < E7 ? ' لكن السعر تحت EMA7 — الزخم يهدأ.' : ''); }
+  else if (stackDn) { out.head = c > E25 ? 'اتجاه هابط يضعف' : 'اتجاه هابط'; out.sub = trendTxt + (c > E25 ? ' لكن السعر صعد فوق EMA25 — الهبوط يضعف.' : c > E7 ? ' لكن السعر فوق EMA7 — الهبوط يهدأ.' : ''); }
+  else { out.head = 'حركة جانبية / بدون اتجاه'; out.sub = 'المتوسطات متداخلة — السوق يبحث عن اتجاه.'; }
+  out.c = c; out.f8 = f8;
+  return out;
+}
+
+/* ===================== COIN ANALYSIS ===================== */
+async function analyze(raw, { silent = false } = {}) {
+  const r = resolveSymbol(raw);
+  if (r.err === 'empty') { showMsg('الصق اسم العقد أولاً، مثل <span class="n">BTCUSDT</span>.'); return; }
+  if (r.err === 'arabic') { showMsg('اكتب رمز العملة بالحروف الإنجليزية كما في باينانس، مثل <span class="n">CYS</span>.'); return; }
+  if (r.err === 'notfound') { showMsg(`ما لقيت عقداً دائماً باسم <b class="n">${esc(r.tok)}</b>.` + (r.sugs.length ? `<div class="sugs">${r.sugs.map(s => `<button class="sug" data-sym="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''), 'error'); return; }
+  hideMsg(); closeDD();
+  const sym = r.symbol, tf = state.tf; state.symbol = sym; $('symInput').value = sym; store.set('sym', sym);
+  try { history.replaceState(null, '', `#${encodeURIComponent(sym)}@${tf}`); } catch (e) { /* sandbox */ }
+  if (state.ctrl) state.ctrl.abort(); const ctrl = new AbortController(); state.ctrl = ctrl; const seq = ++state.seq;
+  state.busy = true; setStatus('loading', 'جاري القراءة…');
+  if (!silent || !state.last || state.last.sym !== sym) showLoading(sym, tf);
+  const q = 'symbol=' + encodeURIComponent(sym), s = ctrl.signal, pd = 'period=5m&limit=289';
+  const reqs = {
+    chart: api(`/fapi/v1/klines?${q}&interval=${tf}&limit=499`, s),
+    k5: tf === '5m' ? null : api(`/fapi/v1/klines?${q}&interval=5m&limit=499`, s),
+    k15: tf === '15m' ? null : api(`/fapi/v1/klines?${q}&interval=15m&limit=499`, s),
+    premium: api(`/fapi/v1/premiumIndex?${q}`, s),
+    ticker: api(`/fapi/v1/ticker/24hr?${q}`, s),
+    book: api(`/fapi/v1/ticker/bookTicker?${q}`, s),
+    oi: api(`/futures/data/openInterestHist?${q}&${pd}`, s),
+    gls: api(`/futures/data/globalLongShortAccountRatio?${q}&${pd}`, s),
+    tpos: api(`/futures/data/topLongShortPositionRatio?${q}&${pd}`, s),
+    tacc: api(`/futures/data/topLongShortAccountRatio?${q}&period=5m&limit=50`, s),
+    taker: api(`/futures/data/takerlongshortRatio?${q}&period=5m&limit=50`, s),
+    basis: api(`/futures/data/basis?pair=${encodeURIComponent(sym)}&contractType=PERPETUAL&period=5m&limit=12`, s),
+  };
+  const keys = Object.keys(reqs).filter(k => reqs[k]);
+  const res = {}, errs = {};
+  const settled = await Promise.allSettled(keys.map(k => reqs[k]));
+  if (seq !== state.seq) return;
+  state.busy = false;
+  keys.forEach((k, i) => { if (settled[i].status === 'fulfilled') res[k] = settled[i].value; else errs[k] = settled[i].reason; });
+  const fatal = errs.chart || errs.premium || (tf !== '5m' && errs.k5) || (tf !== '15m' && errs.k15);
+  if (fatal) { if (fatal.kind === 'abort') return; setStatus('error', 'خطأ'); showMsg(explain(fatal), 'error'); if (!state.last || state.last.sym !== sym) $('result').classList.add('hidden'); return; }
+  try {
+    const pr = res.premium;
+    if (isNum(+pr.time) && +pr.time > 0) state.clockOffset = +pr.time - Date.now();
+    const now = serverNow();
+    const chart = parseK(res.chart, now, { closedOnly: false });
+    const k5 = parseK(tf === '5m' ? res.chart : res.k5, now), k15 = parseK(tf === '15m' ? res.chart : res.k15, now);
+    const m = { oi: ser(res.oi, 'sumOpenInterest'), gls: ser(res.gls, 'longShortRatio'), tpos: ser(res.tpos, 'longShortRatio'), tacc: ser(res.tacc, 'longShortRatio'),
+      taker: Array.isArray(res.taker) ? res.taker.map(x => ({ t: +x.timestamp, b: +x.buyVol, s: +x.sellVol })).sort((a, b) => a.t - b.t) : [] };
+    const hours = state.fundingHours[sym] || 8, fr = +pr.lastFundingRate;
+    const S = buildSeries(k5, k15, m);
+    const x = k5.c.length > 300 ? detectAt(S, k5.c.length - 1, fr * 8 / hours, true) : null;
+    const t = res.ticker || {}, b = res.book || {}, bid = +b.bidPrice, ask = +b.askPrice;
+    const basisArr = Array.isArray(res.basis) ? res.basis.slice().sort((a, b2) => +a.timestamp - +b2.timestamp) : [];
+    const D = { sym, tf, chart, x, m, funding: fr, fundingHours: hours, nextFunding: +pr.nextFundingTime, vol24: +t.quoteVolume, chg24: +t.priceChangePercent,
+      spreadPct: bid > 0 && ask > 0 ? (ask - bid) / ((ask + bid) / 2) * 100 : NaN, onboard: (state.universe.get(sym) || {}).onboard || 0,
+      markLastGap: +t.lastPrice > 0 ? +pr.markPrice / +t.lastPrice - 1 : NaN, basisRate: basisArr.length ? +basisArr[basisArr.length - 1].basisRate : NaN, mark: +pr.markPrice, errs };
+    const R = readout(D);
+    state.last = { sym, tf, D, R, at: now };
+    render(state.last);
+    setStatus('live', 'مباشر');
+  } catch (e) { console.error(e); setStatus('error', 'خطأ'); showMsg('حدث خطأ أثناء القراءة: ' + esc(e.message || e), 'error'); }
+}
+
+/* ===================== RENDER ===================== */
+const setStatus = (k, t) => { $('dot').className = 'dot ' + k; $('statusText').textContent = t; };
+function showMsg(html, kind = '') { const m = $('msg'); m.className = 'msg' + (kind ? ' ' + kind : ''); m.innerHTML = html; }
+const hideMsg = () => { $('msg').className = 'msg hidden'; };
+function showLoading(sym, tf) {
+  $('result').classList.remove('hidden'); $('rSym').textContent = sym; $('rTf').textContent = tf; $('rPx').textContent = '—'; $('rChg').textContent = '';
+  $('rHead').innerHTML = '<span class="skeleton">جاري قراءة الأدوات…</span>'; $('rSub').innerHTML = '';
+  for (const id of ['rLevel', 'rDims', 'rWarn', 'rWatch', 'rSits', 'rTools']) $(id).innerHTML = '';
+}
+function spark(vals, col) {
+  const v = vals.filter(isNum); if (v.length < 3) return '';
+  const mn = Math.min(...v), mx = Math.max(...v), sp = mx - mn || 1, W = 300, H = 34;
+  const pts = v.map((y, i) => `${(i / (v.length - 1) * W).toFixed(1)},${(H - 3 - (y - mn) / sp * (H - 6)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function sitHTML(id) {
+  const s = SIT[id], st = SIT_STATS && SIT_STATS[id], cls = s.dir > 0 ? 'up' : s.dir < 0 ? 'down' : 'flat';
+  let hist = '<div class="h">لم تُختبر نتيجتها التاريخية بعد.</div>';
+  if (st) {
+    const m60 = st.m60 * 100;
+    hist = `<div class="h">تاريخياً (${N(st.n.toLocaleString('en-US'))} حالة على ${N(st.coins)} عملة خلال سنة): بعد ساعة كان السعر ${m60 >= 0 ? 'أعلى' : 'أقل'} بمتوسط ${N(pctRaw(m60, 2))}، وصعد في ${N(st.up.toFixed(0) + '%')} من المرات (المعتاد ${N(SIT_BASE_UP.toFixed(0) + '%')}).
+      ${st.confirmed ? '<b class="up">✓ ثبتت في نصّي السنة</b>' + (Math.abs(m60) < 0.2 ? ' — لكن أثرها صغير (قريب من عمولة صفقة كاملة أو أقل)، فهي معلومة مساعدة وليست إشارة.' : '.') : `<b class="warnc">✗ لم تثبت${st.n < 200 ? ' (حالات قليلة)' : ''} — لا تعتمد عليها.</b>`}</div>`;
+  }
+  return `<div class="sit ${cls}"><div class="t">${s.name}</div><div class="d">${s.desc}</div>${hist}</div>`;
+}
+function render(L) {
+  const { D, R } = L;
+  $('result').classList.remove('hidden');
+  $('rSym').textContent = L.sym; $('rTf').textContent = L.tf;
+  $('rPx').textContent = fmtP(R.c); const ch = $('rChg'); ch.textContent = isNum(D.chg24) ? pctRaw(D.chg24) + ' 24س' : ''; ch.className = 'n ' + (D.chg24 >= 0 ? 'up' : 'down');
+  $('rHead').textContent = R.head; $('rSub').innerHTML = R.sub;
+  $('rLevel').innerHTML = `<span class="level ${R.level[0]}">مستوى الحذر: ${R.level[1]}</span>`;
+  $('rDims').innerHTML = R.dims.map(([k, v, c]) => `<div class="dim3 ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  $('warnBlock').classList.toggle('hidden', !R.warns.length);
+  $('rWarn').innerHTML = R.warns.slice(0, 4).map(w => `<li><span class="ic ${w.lvl}">!</span><span>${w.t}</span></li>`).join('');
+  $('rWatch').innerHTML = R.watch.map(w => `<li><span class="ic eye">◉</span><span>${w}</span></li>`).join('');
+  $('sitBlock').classList.toggle('hidden', !R.sits.length);
+  $('rSits').innerHTML = R.sits.map(sitHTML).join('');
+  $('rTools').innerHTML = R.tools.map(t => `<div class="tool ${t.tone}"><div class="name">${t.k}<small>${t.sub}</small></div><div class="val">${t.val}</div><div class="say">${t.say}</div>${t.spark ? spark(t.spark, '#5ac8fa') : ''}</div>`).join('');
+  const age = D.x && isNum(D.x.metricsAge) ? Math.round(D.x.metricsAge / 60000) : null;
+  $('rAge').innerHTML = age !== null ? `عمر بيانات الحيتان ${N(age + ' د')}` : '';
+  $('rFoot').innerHTML = `آخر تحديث ${N(new Date(L.at - state.clockOffset).toLocaleTimeString('en-GB'))} · قراءة للبيانات وليست توصية. القرار والمخاطرة عليك.`;
+}
+function copyText() {
+  const L = state.last; if (!L) return '';
+  const strip = h => String(h).replace(/<[^>]+>/g, '');
+  return [`${L.sym} · ${L.tf} · ${L.R.head} · مستوى الحذر: ${L.R.level[1]}`, strip(L.R.sub),
+    ...L.R.warns.map(w => '⚠ ' + strip(w.t)), ...L.R.watch.map(w => '👁 ' + strip(w)), ...L.R.sits.map(s => '• ' + SIT[s].name),
+    ...L.R.tools.map(t => `- ${t.k} (${t.sub}): ${strip(t.val)} — ${strip(t.say)}`), 'قراءة للبيانات وليست توصية.'].join('\n');
+}
+
+/* ===================== RADAR ===================== */
+async function scan() {
+  if (state.scanning) return; state.scanning = true; $('scanBtn').disabled = true;
+  const bar = $('scanBar'), info = $('scanInfo'); const step = (p, t) => { bar.style.width = p + '%'; info.textContent = t; };
+  try {
+    step(5, 'جلب كل العقود…');
+    if (!state.universeOK) await loadUniverse();
+    const [tick, prem] = await Promise.all([api('/fapi/v1/ticker/24hr'), api('/fapi/v1/premiumIndex')]);
+    const P = new Map(prem.map(p => [p.symbol, p]));
+    let rows = tick.filter(t => state.universe.has(t.symbol) && t.symbol.endsWith('USDT') && +t.quoteVolume >= 5e6).map(t => {
+      const p = P.get(t.symbol) || {}, h = state.fundingHours[t.symbol] || 8, f8 = +p.lastFundingRate * 8 / h, basis = +p.indexPrice > 0 ? +p.markPrice / +p.indexPrice - 1 : 0;
+      return { s: t.symbol, px: +p.markPrice > 0 ? +p.markPrice : +t.lastPrice, chg: +t.priceChangePercent, qv: +t.quoteVolume, f8, h, basis, pre: Math.abs(+t.priceChangePercent) / 8 + Math.abs(f8) / 0.0005 + Math.abs(basis) / 0.003 + (h < 8 ? 1 : 0) };
+    });
+    rows.sort((a, b) => b.pre - a.pre);
+    const cand = rows.slice(0, 40);
+    let done = 0;
+    const pool = async (items, n, fn) => { const q = items.slice(); await Promise.all(Array.from({ length: n }, async () => { while (q.length) { const it = q.shift(); try { await fn(it); } catch (e) { it.err = e; } done++; } })); };
+    step(15, `فحص ${cand.length} عملة نشطة…`);
+    await pool(cand, 5, async r => {
+      const raw = await api(`/fapi/v1/klines?symbol=${r.s}&interval=5m&limit=300`);
+      const k = parseK(raw, Date.now() + state.clockOffset), L = k.c.length - 1; if (L < 290) return;
+      const sum = (a, f, t) => { let s = 0; for (let i = f; i <= t; i++) s += a[i]; return s; };
+      r.P1h = k.c[L] / k.c[L - 12] - 1; r.P4h = k.c[L] / k.c[L - 48] - 1;
+      r.VS1h = sum(k.v, L - 11, L) / (sum(k.v, L - 287, L - 12) / 23);
+      const b = sum(k.tb, L - 11, L), v = sum(k.v, L - 11, L); r.TK1h = v - b > 0 ? b / (v - b) : NaN;
+      r.score = r.pre + Math.max(0, r.VS1h - 1) + Math.abs(r.P1h) / 0.02;
+      bar.style.width = (15 + 55 * done / cand.length) + '%';
+    });
+    const deep = cand.filter(r => isNum(r.score)).sort((a, b) => b.score - a.score).slice(0, 15); done = 0;
+    step(72, 'قراءة الفائدة المفتوحة والجمهور لأنشط 15 عملة…');
+    await pool(deep, 4, async r => {
+      const [oi, gls] = await Promise.all([api(`/futures/data/openInterestHist?symbol=${r.s}&period=5m&limit=49`), api(`/futures/data/globalLongShortAccountRatio?symbol=${r.s}&period=5m&limit=49`)]);
+      const o = ser(oi, 'sumOpenInterest'), g = ser(gls, 'longShortRatio');
+      if (o.length) { const now = o[o.length - 1]; r.OI1h = now.v / valAt(o, now.t - 36e5) - 1; r.OI4h = now.v / valAt(o, now.t - 4 * 36e5) - 1; r.oiUsd = now.v * r.px; }
+      if (g.length) r.GLS = g[g.length - 1].v;
+      r.score += Math.abs(r.OI1h || 0) / 0.05 + (r.GLS >= 3 || r.GLS <= 0.6 ? 1 : 0);
+      bar.style.width = (72 + 26 * done / deep.length) + '%';
+    });
+    const list = cand.filter(r => isNum(r.score)).sort((a, b) => b.score - a.score).slice(0, 25);
+    state.radar = { at: Date.now(), list };
+    renderRadar();
+    step(100, `آخر فحص ${new Date().toLocaleTimeString('en-GB')} · ${rows.length} عقد بسيولة كافية · اضغط أي عملة لقراءتها كاملة.`);
+  } catch (e) { info.innerHTML = explain(e); bar.style.width = '0%'; }
+  state.scanning = false; $('scanBtn').disabled = false;
+}
+function renderRadar() {
+  const R = state.radar; if (!R) return;
+  $('radarList').innerHTML = R.list.map(r => {
+    const tags = [];
+    if (isNum(r.VS1h) && r.VS1h >= 2) tags.push(`<span class="tag info">حجم ${N(r.VS1h.toFixed(1) + '×')}</span>`);
+    if (isNum(r.P1h) && Math.abs(r.P1h) >= 0.02) tags.push(`<span class="tag ${r.P1h > 0 ? 'up' : 'down'}">ساعة ${N(pct(r.P1h, 1))}</span>`);
+    if (isNum(r.OI1h) && Math.abs(r.OI1h) >= 0.03) tags.push(`<span class="tag ${r.OI1h > 0 ? 'info' : 'warn'}">OI ${N(pct(r.OI1h, 1))}</span>`);
+    if (Math.abs(r.f8) >= 0.0005) tags.push(`<span class="tag warn">تمويل ${N(pct(r.f8, 3))}</span>`);
+    if (r.h < 8) tags.push(`<span class="tag warn">تمويل كل ${r.h}س</span>`);
+    if (r.GLS >= 3) tags.push('<span class="tag warn">الجمهور لونج بقوة</span>'); else if (r.GLS <= 0.6) tags.push('<span class="tag warn">الجمهور شورت بقوة</span>');
+    if (r.qv < 10e6) tags.push('<span class="tag down">سيولة ضعيفة</span>');
+    if (isNum(r.oiUsd) && r.oiUsd < 5e6) tags.push('<span class="tag down">OI صغير</span>');
+    return `<li class="rrow" data-sym="${esc(r.s)}"><div class="rtop"><span class="s">${esc(r.s)}</span><span><span class="n">${fmtP(r.px, r.s)}</span> <span class="n ${r.chg >= 0 ? 'up' : 'down'}">${pctRaw(r.chg)}</span></span></div><div class="rtags">${tags.join('') || '<span class="tag">نشاط عادي</span>'}</div></li>`;
+  }).join('') || '<li class="hint">ما فيه نشاط غير طبيعي الآن.</li>';
+}
+
+/* ===================== UI / EVENTS ===================== */
+function openDD() {
+  const q = cleanInput($('symInput').value).replace(/(USDT|USDC)$/, ''); if (!state.universeOK || !q) { closeDD(); return; }
+  const it = []; for (const m of state.universe.values()) { const b = m.base.replace(/^1000000|^1000|^1M/, ''); const sc = (b === q || m.base === q) ? 0 : (b.startsWith(q) || m.symbol.startsWith(q)) ? 1 : m.symbol.includes(q) ? 2 : 99; if (sc < 99) it.push({ s: m.symbol, sc, v: state.vols[m.symbol] || 0 }); }
+  it.sort((a, b) => a.sc - b.sc || b.v - a.v); state.ddItems = it.slice(0, 8).map(x => x.s); if (!state.ddItems.length) { closeDD(); return; }
+  if (state.ddIdx >= state.ddItems.length) state.ddIdx = -1;
+  $('symList').innerHTML = state.ddItems.map((s, i) => `<div class="opt${i === state.ddIdx ? ' active' : ''}" data-sym="${esc(s)}"><span class="n">${esc(s)}</span><span class="dim n">${state.vols[s] ? '$' + compact(state.vols[s]) : ''}</span></div>`).join('');
+  $('symList').classList.remove('hidden');
+}
+const closeDD = () => { $('symList').classList.add('hidden'); state.ddIdx = -1; };
+function setTab(t) {
+  const coin = t === 'coin';
+  $('paneCoin').classList.toggle('hidden', !coin); $('paneRadar').classList.toggle('hidden', coin);
+  $('tabCoin').classList.toggle('active', coin); $('tabRadar').classList.toggle('active', !coin);
+  $('tabCoin').setAttribute('aria-selected', coin); $('tabRadar').setAttribute('aria-selected', !coin);
+  if (!coin && !state.radar && !state.scanning) scan();
+}
+function setTf(tf) {
+  state.tf = tf; store.set('tf', tf);
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === tf));
+  if (state.symbol) analyze(state.symbol);
+}
+function bind() {
+  const inp = $('symInput');
+  inp.addEventListener('input', () => { state.ddIdx = -1; openDD(); });
+  inp.addEventListener('focus', () => { if (inp.value) inp.select(); });
+  inp.addEventListener('paste', () => setTimeout(() => analyze(inp.value), 0));
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' && state.ddItems.length) { e.preventDefault(); state.ddIdx = Math.min(state.ddItems.length - 1, state.ddIdx + 1); openDD(); }
+    else if (e.key === 'ArrowUp' && state.ddItems.length) { e.preventDefault(); state.ddIdx = Math.max(0, state.ddIdx - 1); openDD(); }
+    else if (e.key === 'Enter') { e.preventDefault(); analyze(state.ddIdx >= 0 && state.ddItems[state.ddIdx] ? state.ddItems[state.ddIdx] : inp.value); inp.blur(); }
+    else if (e.key === 'Escape') closeDD();
+  });
+  $('symList').addEventListener('mousedown', e => e.preventDefault());
+  $('symList').addEventListener('click', e => { const o = e.target.closest('.opt'); if (o) { analyze(o.dataset.sym); inp.blur(); } });
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('.field')) closeDD(); });
+  $('msg').addEventListener('click', e => { const c = e.target.closest('.sug'); if (c) analyze(c.dataset.sym); });
+  $('goBtn').addEventListener('click', () => { analyze(inp.value || state.symbol); inp.blur(); });
+  $('pasteBtn').addEventListener('click', async () => { try { const t = await navigator.clipboard.readText(); if (t) { inp.value = t.trim(); analyze(t); return; } } catch (e) { /* denied */ } inp.focus(); showMsg('اضغط مطولاً على الخانة واختر «لصق».'); });
+  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => setTf(b.dataset.tf)));
+  $('refreshBtn').addEventListener('click', () => { if (state.symbol) analyze(state.symbol, { silent: true }); });
+  $('copyBtn').addEventListener('click', async () => { const t = copyText(); try { await navigator.clipboard.writeText(t); $('copyBtn').textContent = 'تم النسخ ✓'; setTimeout(() => { $('copyBtn').textContent = 'نسخ القراءة'; }, 1500); } catch (e) { /* no clipboard */ } });
+  $('tabCoin').addEventListener('click', () => setTab('coin'));
+  $('tabRadar').addEventListener('click', () => setTab('radar'));
+  $('scanBtn').addEventListener('click', scan);
+  $('radarList').addEventListener('click', e => { const r = e.target.closest('.rrow'); if (r) { setTab('coin'); analyze(r.dataset.sym); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
+  setInterval(() => { if (!document.hidden && state.symbol && !state.busy && $('paneRadar').classList.contains('hidden') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
+}
+async function init() {
+  bind();
+  const tf = store.get('tf', '15m'); state.tf = TF_MS[tf] ? tf : '15m';
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === state.tf));
+  let sym = store.get('sym', ''); const h = decodeURIComponent((location.hash || '').slice(1));
+  if (h) { const [s, t] = h.split('@'); if (s) sym = s; if (t && TF_MS[t]) { state.tf = t; document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === t)); } }
+  setStatus('loading', 'تحميل قائمة العقود…');
+  await loadUniverse().catch(() => {});
+  setStatus(state.universeOK ? 'live' : 'error', state.universeOK ? 'جاهز' : 'تعذر تحميل القائمة');
+  if (sym) analyze(sym); else $('symInput').focus();
+}
+init();
+})();
+</script>
+</body>
+</html>
