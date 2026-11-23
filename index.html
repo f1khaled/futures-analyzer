@@ -1131,7 +1131,9 @@ function setMode(m, rerun = true) {
   if (!MODES[m]) return;
   state.mode = m; store.set('mode', m);
   document.querySelectorAll('.mode').forEach(b => { const on = b.dataset.mode === m; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
-  $('modeHint').innerHTML = `الدخول ${N(MODES[m].tf)} · الفلتر ${N(MODES[m].htf)}`;
+  $('modeHint').innerHTML = m === '5m'
+    ? '<span class="warnc">سكالب 5m هو الأصعب: العمولة والضوضاء تأكل أغلب الربح — يُفضّل 15m أو 1h.</span>'
+    : `الدخول ${N(MODES[m].tf)} · الفلتر ${N(MODES[m].htf)}`;
   if (rerun && state.symbol) run(state.symbol);
 }
 function bind() {
