@@ -218,6 +218,13 @@ body{background:transparent}
   border:1px solid rgba(255,255,255,.14);border-bottom:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 -10px 40px rgba(0,0,0,.4);border-radius:28px 28px 0 0}
 .shs .now{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1)}
 .shx{background:rgba(255,255,255,.12)}
+#sheet .panel{transform:translateY(calc(100% + 80px));visibility:hidden;transition:transform .42s var(--ease),visibility 0s linear .42s}
+#sheet.show .panel{transform:none;visibility:visible;transition:transform .42s var(--ease)}
+/* scroll-edge effect: content fades out under the status bar and behind the tab bar */
+.edgeTop,.edgeBot{position:fixed;left:0;right:0;z-index:9;pointer-events:none}
+.edgeTop{top:0;height:calc(env(safe-area-inset-top) + 18px);background:linear-gradient(180deg,rgba(0,0,0,.88) 0%,rgba(0,0,0,.6) 65%,rgba(0,0,0,0));
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+.edgeBot{bottom:0;height:calc(96px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.9) 0%,rgba(0,0,0,.65) 45%,rgba(0,0,0,0))}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .search,.card,.tile,.seg,.pill,.list,.more,.msg,.wrow,.dropdown,.btng,.sug,.tabbar{background:#1c1c1e}
 }
@@ -230,6 +237,7 @@ body{background:transparent}
 <body>
 
 <div class="ambient" id="ambient" aria-hidden="true"></div>
+<div class="edgeTop" aria-hidden="true"></div><div class="edgeBot" aria-hidden="true"></div>
 <!-- ============ ANALYSE ============ -->
 <section id="paneCoin" class="pane">
   <div class="lt-row"><h1 class="lt">تحليل</h1><span class="status" aria-live="polite"><span class="dot" id="dot"></span><span id="statusText">جاهز</span></span></div>
@@ -865,7 +873,7 @@ const hideMsg = () => { $('msg').className = 'msg hidden'; };
 const Q = '<i class="q">?</i>';
 const ARROW_UP = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 20V5M5 11l7-7 7 7" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ARROW_DN = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 4v15M5 13l7 7 7-7" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const FLAT = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M4 12h16" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const FLAT = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M4 8.5h15M15.5 5l3.5 3.5-3.5 3.5M20 15.5H5M8.5 12 5 15.5 8.5 19" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.3 }) : null;
 function replay() { document.querySelectorAll('#result .a').forEach(el => { el.classList.remove('in'); void el.offsetWidth; if (io) io.observe(el); else el.classList.add('in'); }); }
 
