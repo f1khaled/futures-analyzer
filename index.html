@@ -112,6 +112,9 @@ button{font:inherit;color:inherit}
 .rgdot{transition:left .9s var(--ease),background .3s}
 .rgdot.out{background:#ff9f0a;box-shadow:0 0 0 3px rgba(0,0,0,.45),0 0 14px rgba(255,159,10,.9)}
 .rgst{font-size:13px;margin-top:6px;color:var(--label2)}
+.rgseen{position:absolute;top:3px;bottom:3px;border-radius:3px;background:rgba(255,255,255,.55);transition:left .9s var(--ease),right .9s var(--ease)}
+.dot.ping{animation:ping .9s ease-out}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(48,209,88,.8)}100%{box-shadow:0 0 0 9px rgba(48,209,88,0)}}
 .rgst.in{color:#30d158}.rgst.up{color:#ff9f0a}.rgst.dn{color:#ff9f0a}
 .rgleft{font-variant-numeric:tabular-nums}
 .pxflash-up{color:#30d158 !important}.pxflash-dn{color:#ff453a !important}
@@ -1021,8 +1024,8 @@ function bandsFor(sym, D, price, now) {
   const all = state.bands[sym] = state.bands[sym] || {};
   for (const m of [15, 60]) {
     let b = all[m];
-    if (b && now >= b.end) { all['prev' + m] = { up: b.up, dn: b.dn }; b = all[m] = null; }
-    if (!b) { const h = D && D.rng && D.rng[m]; if (isNum(h) && isNum(price)) b = all[m] = { m, h, P0: price, lo: price * Math.exp(-h), hi: price * Math.exp(h), pct: Math.exp(h) - 1, t0: now, end: now + m * 60000, up: false, dn: false, id: sym + m + now }; }
+    if (b && now >= b.end) { all['prev' + m] = { up: b.up, dn: b.dn }; b = all[m] = null; saveBands(); }
+    if (!b) { const h = D && D.rng && D.rng[m]; if (isNum(h) && isNum(price)) b = all[m] = { m, h, P0: price, lo: price * Math.exp(-h), hi: price * Math.exp(h), pct: Math.exp(h) - 1, t0: now, end: now + m * 60000, up: false, dn: false, sLo: price, sHi: price, id: sym + m + now }; saveBands(); }
     if (b && isNum(price)) { if (price > b.hi) b.up = true; if (price < b.lo) b.dn = true; }
   }
   return all;
@@ -1036,7 +1039,7 @@ function renderRange(L) {
   if (el.dataset.key !== key) {
     const edge = (50 - 50 / RG_SCALE).toFixed(1);
     const row = (lbl, b) => `<div class="rgrow" data-m="${b.m}"><div class="rgl"><span>${lbl} · <span class="rgleft"></span></span><b class="n">${LTR('±' + (b.pct * 100).toFixed(b.pct < 0.01 ? 2 : 1) + '%')}</b></div>
-      <div class="rgline"><span class="rgp lo n">${fmtP(b.lo)}</span><div class="rgtrk"><i class="rgband rgnew" style="left:${edge}%;right:${edge}%"></i><i class="rgdot" style="left:50%"></i></div><span class="rgp hi n">${fmtP(b.hi)}</span></div>
+      <div class="rgline"><span class="rgp lo n">${fmtP(b.lo)}</span><div class="rgtrk"><i class="rgband rgnew" style="left:${edge}%;right:${edge}%"></i><i class="rgseen" style="left:50%;right:50%"></i><i class="rgdot" style="left:50%"></i></div><span class="rgp hi n">${fmtP(b.hi)}</span></div>
       <div class="rgst"></div></div>`;
     const prev = B.prev15 ? (B.prev15.up || B.prev15.dn ? ' النطاق اللي قبله (15 د): السعر طلع برا.' : ' النطاق اللي قبله (15 د): السعر بقي داخله ✓') : '';
     el.innerHTML = `<div class="cap">الحركة المتوقعة ${Q}</div>${row('خلال 15 دقيقة', b15)}${row('خلال ساعة', b60)}
@@ -1052,12 +1055,20 @@ function updateRangeLive(price, now) {
   for (const row of el.querySelectorAll('.rgrow')) {
     const b = B[row.dataset.m]; if (!b) continue;
     if (isNum(price)) { if (price > b.hi) b.up = true; if (price < b.lo) b.dn = true;
-      const f = Math.log(price / b.P0) / b.h, pos = 50 + clampN(f / RG_SCALE, -1, 1) * 50, d = row.querySelector('.rgdot');
+      b.sLo = Math.min(isNum(b.sLo) ? b.sLo : price, price); b.sHi = Math.max(isNum(b.sHi) ? b.sHi : price, price);
+      const P = x => 50 + clampN(Math.log(x / b.P0) / b.h / RG_SCALE, -1, 1) * 50, pos = P(price), d = row.querySelector('.rgdot');
+      const sn = row.querySelector('.rgseen'); sn.style.left = P(b.sLo).toFixed(2) + '%'; sn.style.right = (100 - P(b.sHi)).toFixed(2) + '%';
       d.style.left = pos.toFixed(2) + '%'; d.classList.toggle('out', price > b.hi || price < b.lo);
       const [cls, txt] = rgStatus(b, price), st = row.querySelector('.rgst'); st.className = 'rgst ' + cls; st.textContent = txt; }
     row.querySelector('.rgleft').textContent = 'باقي ' + mmss(b.end - now);
   }
 }
+function saveBands() { try { const now = serverNow(), out = {};
+  for (const [sym, B] of Object.entries(state.bands)) { const o = {}; for (const m of [15, 60]) if (B[m] && B[m].end > now) o[m] = B[m]; if (o[15] || o[60]) out[sym] = o; }
+  store.set('bands', out); } catch (e) { /* storage unavailable */ } }
+function loadBands() { const raw = store.get('bands', {}), now = Date.now(); if (!raw || typeof raw !== 'object') return;
+  for (const [sym, B] of Object.entries(raw)) for (const m of [15, 60]) { const b = B && B[m];
+    if (b && isNum(b.end) && b.end > now && isNum(b.P0) && isNum(b.h) && b.h > 0 && isNum(b.lo) && isNum(b.hi)) (state.bands[sym] = state.bands[sym] || {})[m] = b; } }
 // live price between full readings (every 3 s, one light request)
 function livePrice(L) { const lp = state.live; return lp && lp.sym === L.sym && serverNow() - lp.at < 20000 ? lp.p : L.R.c; }
 async function pollPrice() {
@@ -1070,7 +1081,8 @@ async function pollPrice() {
     const prev = livePrice(L); state.live = { sym: L.sym, p, at: serverNow() };
     const px = $('rPx'); px.textContent = fmtP(p);
     if (isNum(prev) && p !== prev) { px.classList.remove('pxflash-up', 'pxflash-dn'); void px.offsetWidth; px.classList.add(p > prev ? 'pxflash-up' : 'pxflash-dn'); clearTimeout(state.flashT); state.flashT = setTimeout(() => px.classList.remove('pxflash-up', 'pxflash-dn'), 900); }
-    updateRangeLive(p, serverNow());
+    updateRangeLive(p, serverNow()); saveBands();
+    const dt = $('dot'); if (dt.classList.contains('live')) { dt.classList.remove('ping'); void dt.offsetWidth; dt.classList.add('ping'); }
   } catch (e) { if (e && (e.kind === 'ratelimit' || e.kind === 'banned')) state.backoffUntil = Date.now() + (e.kind === 'banned' ? 300000 : 60000); }
   finally { state.pricePolling = false; }
 }
@@ -1223,7 +1235,7 @@ function bind() {
   setInterval(() => { if (!document.hidden && state.symbol && !state.busy && Date.now() > state.backoffUntil && document.activeElement !== $('symInput') && $('symList').classList.contains('hidden') && !$('paneCoin').classList.contains('hidden') && !$('sheet').classList.contains('show') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
 }
 async function init() {
-  bind(); renderPills();
+  bind(); renderPills(); loadBands();
   const tf = store.get('tf', '15m'); state.tf = TF_MS[tf] ? tf : '15m';
   if (location.hash === '#selftest') { openTest(true); await loadUniverse().catch(() => {}); return; }
   let sym = store.get('sym', ''); const h = decodeURIComponent((location.hash || '').slice(1));
