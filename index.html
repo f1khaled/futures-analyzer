@@ -503,14 +503,14 @@ const { isNum, ema, rsi, sma, buildSeries, detectAt, metricsAt, SIT, idxAt, valA
 const API = 'https://fapi.binance.com';
 const TF_MS = { '5m': 3e5, '15m': 9e5, '1h': 36e5 };
 const UI_TF = { '15m': 1, '1h': 1 };
-const APP_VERSION = '3.0 · 24 نوفمبر';   // timeframes offered in the app
+const APP_VERSION = '3.1 · مباشر';   // timeframes offered in the app
 const REQ_TIMEOUT = 8000;
 // Historical outcome of each situation: 90 USDT perpetuals, Nov 2025 – Oct 2026, detection code = SHARED block above.
 // m60 = mean price change 60 min later; up = % of cases higher after 60 min (normal for any moment ≈ 47.7%).
 // confirmed = on the expected side of the baseline in BOTH halves of the year, ≥100 cases each, ≥20 coins.
 const SIT_BASE_UP = 47.7;
 const SIT_STATS = {"S1":{"n":18,"coins":5,"m60":-0.01628,"up":38.9,"confirmed":false},"S1b":{"n":26,"coins":14,"m60":0.00866,"up":61.5,"confirmed":false},"S2":{"n":470,"coins":36,"m60":0.00069,"up":42.3,"confirmed":false},"S3":{"n":6999,"coins":90,"m60":-0.00101,"up":45.2,"confirmed":true},"S3b":{"n":7050,"coins":90,"m60":0.00086,"up":51.1,"confirmed":true},"S4":{"n":677,"coins":88,"m60":-0.00065,"up":45.9,"confirmed":false},"S4b":{"n":165,"coins":57,"m60":-0.00321,"up":49.7,"confirmed":false},"S5":{"n":13830,"coins":90,"m60":0.00069,"up":48.2,"confirmed":true},"S5b":{"n":15193,"coins":90,"m60":-0.00013,"up":48,"confirmed":false},"S6":{"n":1352,"coins":73,"m60":-0.00006,"up":47.6,"confirmed":false},"S7":{"n":24,"coins":16,"m60":0.00113,"up":37.5,"confirmed":false}};
-const state = { bands: {}, live: null, pricePolling: false, flashT: 0, backoffUntil: 0, tf: '15m', symbol: '', universe: new Map(), universeOK: false, vols: {}, fundingHours: {}, clockOffset: 0, seq: 0, ctrl: null, busy: false, last: null, ddItems: [], ddIdx: -1, radar: null, scanning: false };
+const state = { bands: {}, live: null, pricePolling: false, flashT: 0, ws: null, wsKey: '', wsGotAt: 0, wsFails: 0, wsUrl: 0, wsRetry: 0, liveT: 0, liveDirty: false, chartDirty: false, shownPx: NaN, backoffUntil: 0, tf: '15m', symbol: '', universe: new Map(), universeOK: false, vols: {}, fundingHours: {}, clockOffset: 0, seq: 0, ctrl: null, busy: false, last: null, ddItems: [], ddIdx: -1, radar: null, scanning: false };
 const serverNow = () => Date.now() + state.clockOffset;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -783,6 +783,7 @@ async function analyze(raw, { silent = false } = {}) {
     const R = readout(D);
     state.last = { sym, tf, D, R, at: now };
     render(state.last);
+    liveConnect();
     addRecent(sym);
     setStatus('live', 'مباشر');
   } catch (e) { console.error(e); setStatus('error', 'خطأ'); showMsg('حدث خطأ أثناء القراءة: ' + esc(e.message || e), 'error'); }
@@ -956,7 +957,7 @@ function chartSVG(L) {
 function render(L) {
   const { D, R } = L, v = R.v;
   $('result').classList.remove('hidden');
-  $('rSym').textContent = L.sym; $('rPx').textContent = fmtP(R.c);
+  $('rSym').textContent = L.sym; state.shownPx = liveFresh(L) ? state.live.p : R.c; $('rPx').textContent = fmtP(state.shownPx);
   const ch = $('rChg'); ch.textContent = isNum(D.chg24) ? (D.chg24 >= 0 ? '▲ ' : '▼ ') + Math.abs(D.chg24).toFixed(2) + '%' : ''; ch.className = 'badge n ' + (D.chg24 >= 0 ? 'up' : 'down');
   $('rUpd').textContent = 'تحديث ' + new Date(L.at - state.clockOffset).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   document.querySelectorAll('#tfSeg button').forEach(b => b.classList.toggle('on', b.dataset.tf === L.tf)); syncFav();
@@ -1089,7 +1090,7 @@ function updateRangeLive(price, now) {
     const b = B[row.dataset.m]; if (!b) continue;
     if (isNum(price)) {
       if (price > b.hi) b.up = true; if (price < b.lo) b.dn = true;
-      const pts = b.pts = b.pts || [], step = b.m === 15 ? 3000 : 10000, last = pts[pts.length - 1];
+      const pts = b.pts = b.pts || [], step = b.m === 15 ? 2000 : 8000, last = pts[pts.length - 1];
       if (last && now - last[0] < step) last[1] = price, last[0] = Math.max(last[0], now - 1); else pts.push([now, price]);
       if (pts.length > 400) pts.splice(1, pts.length - 400);
       const [cls, txt] = rgStatus(b, price), st = row.querySelector('.rgst'); st.className = 'rgst ' + cls; st.textContent = txt;
@@ -1108,19 +1109,68 @@ function loadBands() { const raw = store.get('bands', {}), now = Date.now(); if 
 // live price between full readings (every 3 s, one light request)
 function liveFresh(L) { const lp = state.live; return !!(lp && lp.sym === L.sym && serverNow() - lp.at < 20000); }
 function livePrice(L) { const lp = state.live; return lp && lp.sym === L.sym && serverNow() - lp.at < 20000 ? lp.p : L.R.c; }
-async function pollPrice() {
+/* ===================== LIVE: Binance WebSocket (trades, current candle, 24h), REST fallback every 1 s ===================== */
+const WS_URLS = ['wss://fstream.binance.com/stream?streams=', 'wss://fstream.binance.com/market/stream?streams='];
+const wsLive = () => !!(state.ws && state.ws.readyState === 1 && Date.now() - state.wsGotAt < 6000);
+function liveConnect() {
+  const L = state.last, want = L && !document.hidden && !$('result').classList.contains('hidden') ? L.sym + '|' + L.tf : '';
+  if (state.ws && state.wsKey === want) return;
+  liveClose();
+  if (!want || typeof WebSocket === 'undefined' || state.wsFails >= 6) return;          // the 1 s REST poll covers it
+  const s = L.sym.toLowerCase(), url = WS_URLS[state.wsUrl % WS_URLS.length] + `${s}@aggTrade/${s}@kline_${L.tf}/${s}@miniTicker`;
+  let ws; try { ws = new WebSocket(url); } catch (e) { state.wsFails++; state.wsUrl++; return; }
+  state.ws = ws; state.wsKey = want; state.wsGotAt = 0; let got = false;
+  ws.onmessage = ev => {
+    let d; try { d = JSON.parse(ev.data); d = d.data || d; } catch (e) { return; }
+    got = true; state.wsGotAt = Date.now(); state.wsFails = 0;
+    const L2 = state.last; if (!L2 || L2.sym.toLowerCase() !== s) return;
+    if (d.e === 'aggTrade') liveTick(+d.p);
+    else if (d.e === 'kline' && d.k) liveKline(d.k);
+    else if (d.e === '24hrMiniTicker') { const c = +d.c, o = +d.o; if (c > 0 && o > 0) { L2.D.chg24 = (c / o - 1) * 100; state.liveDirty = true; scheduleLive(); } }
+  };
+  ws.onerror = () => { try { ws.close(); } catch (e) { /* closed */ } };
+  ws.onclose = () => { if (state.ws !== ws) return; state.ws = null; state.wsKey = '';
+    if (!got) { state.wsFails++; state.wsUrl++; }
+    clearTimeout(state.wsRetry); state.wsRetry = setTimeout(liveConnect, Math.min(20000, 1000 * 2 ** Math.min(state.wsFails, 4))); };
+}
+function liveClose() { const ws = state.ws; state.ws = null; state.wsKey = ''; if (ws) { ws.onclose = null; ws.onmessage = null; try { ws.close(); } catch (e) { /* closed */ } } }
+function liveTick(p) {
+  const L = state.last; if (!L || !isNum(p) || p <= 0) return;
+  state.live = { sym: L.sym, p, at: serverNow() };
+  const ch = L.D.chart, n = ch.c.length - 1;
+  if (n >= 0 && serverNow() < ch.t[n] + TF_MS[L.tf]) { ch.c[n] = p; if (p > ch.h[n]) ch.h[n] = p; if (p < ch.l[n]) ch.l[n] = p; state.chartDirty = true; }
+  state.liveDirty = true; scheduleLive();
+}
+function liveKline(k) {
+  const L = state.last, ch = L.D.chart, n = ch.t.length - 1, t = +k.t; if (n < 0) return;
+  if (t > ch.t[n]) { if (!state.busy && serverNow() - L.at > 5000) analyze(L.sym, { silent: true }); return; }   // a new candle opened → full fresh reading
+  if (t === ch.t[n]) { ch.h[n] = Math.max(ch.h[n], +k.h); ch.l[n] = Math.min(ch.l[n], +k.l); ch.c[n] = +k.c; ch.v[n] = +k.v; state.chartDirty = true; scheduleLive(); }
+}
+function scheduleLive() {
+  if (state.liveT) return;
+  state.liveT = setTimeout(() => { state.liveT = 0; state.liveDrawAt = Date.now(); applyLive(); }, Math.max(0, 300 - (Date.now() - (state.liveDrawAt || 0))));
+}
+function applyLive() {
+  const L = state.last; if (!L || document.hidden || !state.liveDirty && !state.chartDirty) return;
+  const now = serverNow(), p = livePrice(L);
+  if (state.liveDirty) {
+    state.liveDirty = false;
+    const px = $('rPx'), prev = state.shownPx; px.textContent = fmtP(p); state.shownPx = p;
+    if (isNum(prev) && p !== prev) { px.classList.remove('pxflash-up', 'pxflash-dn'); void px.offsetWidth; px.classList.add(p > prev ? 'pxflash-up' : 'pxflash-dn'); clearTimeout(state.flashT); state.flashT = setTimeout(() => px.classList.remove('pxflash-up', 'pxflash-dn'), 700); }
+    const c = L.D.chg24, cb = $('rChg'); if (isNum(c)) { cb.textContent = (c >= 0 ? '▲ ' : '▼ ') + Math.abs(c).toFixed(2) + '%'; cb.className = 'badge n ' + (c >= 0 ? 'up' : 'down'); }
+    updateRangeLive(p, now);
+    if (Date.now() - (state.bandsSavedAt || 0) > 5000) { state.bandsSavedAt = Date.now(); saveBands(); }
+    const dt = $('dot'); if (dt.classList.contains('live') && Date.now() - (state.pingAt || 0) > 1000) { state.pingAt = Date.now(); dt.classList.remove('ping'); void dt.offsetWidth; dt.classList.add('ping'); }
+  }
+  if (state.chartDirty && Date.now() - (state.chartDrawAt || 0) > 900) { state.chartDirty = false; state.chartDrawAt = Date.now(); $('chartSvg').innerHTML = chartSVG(L); }
+  else if (state.chartDirty) scheduleLive();
+}
+async function pollPrice() {   // fallback when the WebSocket is not delivering
   const L = state.last;
-  if (!L || document.hidden || state.busy || state.pricePolling || Date.now() < state.backoffUntil || $('paneCoin').classList.contains('hidden') || $('result').classList.contains('hidden')) return;
+  if (!L || wsLive() || document.hidden || state.busy || state.pricePolling || Date.now() < state.backoffUntil || $('result').classList.contains('hidden')) return;
   state.pricePolling = true;
-  try {
-    const j = await apiOnce(`/fapi/v1/ticker/price?symbol=${encodeURIComponent(L.sym)}`), p = +j.price;
-    if (state.last !== L || !isNum(p) || p <= 0) return;
-    const prev = livePrice(L); state.live = { sym: L.sym, p, at: serverNow() };
-    const px = $('rPx'); px.textContent = fmtP(p);
-    if (isNum(prev) && p !== prev) { px.classList.remove('pxflash-up', 'pxflash-dn'); void px.offsetWidth; px.classList.add(p > prev ? 'pxflash-up' : 'pxflash-dn'); clearTimeout(state.flashT); state.flashT = setTimeout(() => px.classList.remove('pxflash-up', 'pxflash-dn'), 900); }
-    updateRangeLive(p, serverNow()); saveBands();
-    const dt = $('dot'); if (dt.classList.contains('live')) { dt.classList.remove('ping'); void dt.offsetWidth; dt.classList.add('ping'); }
-  } catch (e) { if (e && (e.kind === 'ratelimit' || e.kind === 'banned')) state.backoffUntil = Date.now() + (e.kind === 'banned' ? 300000 : 60000); }
+  try { const j = await apiOnce(`/fapi/v1/ticker/price?symbol=${encodeURIComponent(L.sym)}`); if (state.last === L) liveTick(+j.price); }
+  catch (e) { if (e && (e.kind === 'ratelimit' || e.kind === 'banned')) state.backoffUntil = Date.now() + (e.kind === 'banned' ? 300000 : 60000); }
   finally { state.pricePolling = false; }
 }
 const clampN = (x, a, b) => Math.min(b, Math.max(a, isNum(x) ? x : 0));
@@ -1267,7 +1317,9 @@ function bind() {
   $('testBack').addEventListener('click', () => openTest(false));
   $('testRun').addEventListener('click', selfTest);
   $('testCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(state.testReport || ''); $('testCopy').textContent = 'تم النسخ ✓'; setTimeout(() => { $('testCopy').textContent = 'نسخ التقرير'; }, 1500); } catch (e) { /* no clipboard */ } });
-  setInterval(pollPrice, 3000);
+  setInterval(pollPrice, 1000);
+  setInterval(liveConnect, 4000);
+  document.addEventListener('visibilitychange', () => { liveConnect(); if (!document.hidden && state.last && serverNow() - state.last.at > 30000 && !state.busy) analyze(state.last.sym, { silent: true }); });
   setInterval(() => { if (state.last && !document.hidden) updateRangeLive(NaN, serverNow()); }, 1000);   // countdown + redraw, no new price point
   setInterval(() => { if (!document.hidden && state.symbol && !state.busy && Date.now() > state.backoffUntil && document.activeElement !== $('symInput') && $('symList').classList.contains('hidden') && !$('paneCoin').classList.contains('hidden') && !$('sheet').classList.contains('show') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
 }
