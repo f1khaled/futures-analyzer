@@ -1,0 +1,16 @@
+SELFTEST BTCUSDT · 14/14 endpoints OK · Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHT
+endpoints: exchangeInfo=ok fundingInfo=ok premiumIndex=ok ticker24h=ok bookTicker=ok klines15m=ok klines5m=ok openInterest=ok openInterestHist=ok globalLS=ok topPosition=ok topAccount=ok taker=ok basis=ok
+serverTime=1795534102001 (2026-11-24T15:28:22.001Z) localOffsetMs=-1512
+k15 lastClosed=2026-11-24T15:00:00Z O=60405.6 H=60512.8 L=59860.6 C=59948.8 V=4119.674 gaps=0
+closed EMA7/25/99=60217.66529/60198.93273/60625.56271 RSI6/12/24=36.561774/43.771775/45.109058 MA5/10=4115.134/3992.5217
+live(2026-11-24T15:15:00Z) C=59729.7 EMA7/25/99=60095.67397/60162.83791/60607.64546 RSI6/12/24=29.779588/39.388441/42.688175 VOL=5314.392 MA5/10=4543.1534/4321.8053
+openInterestHist ts=1795533900000 (2026-11-24T15:25:00.000Z) sumOpenInterest=97363.79000000 ageMin=3.4
+globalLS ts=1795533900000 (2026-11-24T15:25:00.000Z) longShortRatio=2.4746 ageMin=3.4
+topPosition ts=1795533900000 (2026-11-24T15:25:00.000Z) longShortRatio=1.6563 ageMin=3.4
+topAccount ts=1795533900000 (2026-11-24T15:25:00.000Z) longShortRatio=2.8700 ageMin=3.4
+taker ts=1795533600000 (2026-11-24T15:20:00.000Z) buySellRatio=1.6074 buy=1058.5100 sell=658.5230 ageMin=8.4
+basis ts=1795533600000 (2026-11-24T15:20:00.000Z) basisRate=-0.0006 ageMin=8.4
+openInterest now=97295.513 time=1795534097518
+premium mark=59735.70000000 index=59770.73260870 funding=0.00002524 interval=8h next=1795536000000
+book bid=59733.00 ask=59733.10
+ticker last=59736.70 chg=-5.920% qv=16441529546.83
