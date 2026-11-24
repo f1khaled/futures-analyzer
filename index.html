@@ -120,6 +120,12 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;ma
 .rtags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px}
 .tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:650;background:rgba(255,255,255,.05);color:var(--muted)}
 .tag.up{color:var(--up);background:var(--up-s)}.tag.down{color:var(--down);background:var(--down-s)}.tag.warn{color:var(--warn);background:var(--warn-s)}.tag.info{color:var(--info);background:var(--info-s)}
+.tests{display:flex;flex-direction:column;gap:2px;font-size:13px}
+.tests .tr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 2px;border-top:1px solid var(--soft)}
+.tests .tr:first-child{border-top:0}
+.tests .tr .v{font:600 12px var(--mono);direction:ltr;color:var(--muted);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+.tests .sec{font-size:12px;font-weight:750;color:var(--dim);padding:12px 2px 4px}
+.ok{color:var(--up)}.bad{color:var(--down)}
 .progress{height:3px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}
 .progress i{display:block;height:100%;width:0;background:var(--info);transition:width .3s}
 .skeleton{color:transparent !important;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:8px}
@@ -205,7 +211,27 @@ footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-
     <div class="card glass" id="radarCard"><ul class="radar-list" id="radarList"><li class="hint" style="padding:8px 4px">اضغط «افحص الآن».</li></ul></div>
   </section>
 
-  <footer>البيانات من واجهة Binance USDⓈ-M العامة (<span class="n">fapi.binance.com</span>) بدون مفاتيح. هذه قراءة للبيانات وليست توصية؛ اختباراتنا لم تجد أفضلية مضمونة بعد العمولة.</footer>
+  <!-- ============ SELF-TEST ============ -->
+  <section id="paneTest" class="hidden">
+    <div class="box glass">
+      <div class="sub-row" style="margin-top:0">
+        <div><b>🔧 فحص البيانات</b><div class="hint">يتأكد إن كل مصادر باينانس شغالة من جهازك، ويعرض الأرقام الخام عشان نقارنها بالأرشيف الرسمي.</div></div>
+        <button class="btn ghost sm" id="testBack">رجوع</button>
+      </div>
+      <div class="inrow" style="margin-top:10px">
+        <div class="field"><input id="testSym" type="text" value="BTCUSDT" autocapitalize="characters" spellcheck="false" aria-label="عملة الفحص"></div>
+        <button class="btn primary" id="testRun">ابدأ الفحص</button>
+      </div>
+      <div class="progress"><i id="testBar"></i></div>
+    </div>
+    <div class="card glass hidden" id="testCard">
+      <div class="bh"><span id="testSummary"></span><button class="btn ghost sm" id="testCopy" style="flex:0">نسخ التقرير</button></div>
+      <div id="testOut" class="tests"></div>
+      <div class="foot">انسخ التقرير وأرسله في المحادثة — نقارن كل رقم بأرشيف باينانس لنفس الدقيقة.</div>
+    </div>
+  </section>
+
+  <footer><a href="#" id="testLink" style="color:var(--info)">🔧 فحص البيانات</a><br>البيانات من واجهة Binance USDⓈ-M العامة (<span class="n">fapi.binance.com</span>) بدون مفاتيح. هذه قراءة للبيانات وليست توصية؛ اختباراتنا لم تجد أفضلية مضمونة بعد العمولة.</footer>
 </div>
 
 <script>
@@ -676,6 +702,84 @@ function renderRadar() {
   }).join('') || '<li class="hint" style="padding:8px 4px">ما فيه نشاط غير طبيعي الآن.</li>';
 }
 
+/* ===================== SELF-TEST ===================== */
+async function selfTest() {
+  const sym = (cleanInput($('testSym').value) || 'BTCUSDT').replace(/^(?!.*USD[TC]$)(.*)$/, '$1USDT');
+  const bar = $('testBar'), rows = [], rep = [], q = 'symbol=' + encodeURIComponent(sym), pd = 'period=5m&limit=30';
+  $('testRun').disabled = true; $('testCard').classList.remove('hidden'); $('testOut').innerHTML = '<div class="hint">جاري الفحص…</div>';
+  const add = (ok, name, val) => rows.push({ ok, name, val });
+  const sec = t => rows.push({ sec: t });
+  const ep = {
+    exchangeInfo: '/fapi/v1/exchangeInfo', fundingInfo: '/fapi/v1/fundingInfo', premiumIndex: `/fapi/v1/premiumIndex?${q}`, ticker24h: `/fapi/v1/ticker/24hr?${q}`,
+    bookTicker: `/fapi/v1/ticker/bookTicker?${q}`, klines15m: `/fapi/v1/klines?${q}&interval=15m&limit=499`, klines5m: `/fapi/v1/klines?${q}&interval=5m&limit=499`,
+    openInterest: `/fapi/v1/openInterest?${q}`, openInterestHist: `/futures/data/openInterestHist?${q}&${pd}`, globalLS: `/futures/data/globalLongShortAccountRatio?${q}&${pd}`,
+    topPosition: `/futures/data/topLongShortPositionRatio?${q}&${pd}`, topAccount: `/futures/data/topLongShortAccountRatio?${q}&${pd}`,
+    taker: `/futures/data/takerlongshortRatio?${q}&${pd}`, basis: `/futures/data/basis?pair=${encodeURIComponent(sym)}&contractType=PERPETUAL&${pd}`,
+  };
+  const res = {}; let done = 0; const keys = Object.keys(ep);
+  sec('١. الاتصال بمصادر باينانس');
+  await Promise.all(keys.map(async k => { const t0 = performance.now(); try { res[k] = await api(ep[k]); res[k + '_ms'] = Math.round(performance.now() - t0); } catch (e) { res[k + '_err'] = e; } bar.style.width = (++done / keys.length * 70) + '%'; }));
+  for (const k of keys) add(!res[k + '_err'], k, res[k + '_err'] ? (res[k + '_err'].status || '') + ' ' + res[k + '_err'].message : res[k + '_ms'] + 'ms');
+  const okCount = keys.filter(k => !res[k + '_err']).length;
+  rep.push(`SELFTEST ${sym} · ${okCount}/${keys.length} endpoints OK · ${navigator.userAgent.replace(/\s+/g, ' ').slice(0, 80)}`);
+  rep.push('endpoints: ' + keys.map(k => `${k}=${res[k + '_err'] ? 'ERR(' + (res[k + '_err'].status || res[k + '_err'].kind) + ')' : 'ok'}`).join(' '));
+  const pr = res.premiumIndex;
+  if (pr) { state.clockOffset = +pr.time - Date.now(); rep.push(`serverTime=${pr.time} (${new Date(+pr.time).toISOString()}) localOffsetMs=${state.clockOffset}`); }
+  const now = serverNow();
+  // ---- Candles & indicators ----
+  if (res.klines15m) {
+    sec('٢. الشموع والمؤشرات (15m)');
+    const all = parseK(res.klines15m, now, { closedOnly: false }), cl = parseK(res.klines15m, now), L = cl.c.length - 1, A = all.c.length - 1;
+    let gaps = 0; for (let i = 1; i < all.t.length; i++) if (all.t[i] - all.t[i - 1] !== 9e5) gaps++;
+    add(gaps === 0, 'تسلسل الشموع بدون فجوات', gaps + ' gaps');
+    add(all.ct.every((ct, i) => ct - all.t[i] === 899999), 'وقت فتح/إغلاق كل شمعة صحيح', 'ct-ot=899999');
+    const iso = t => new Date(t).toISOString().replace('.000Z', 'Z');
+    const ind = (k, i) => { const e7 = ema(k.c, 7)[i], e25 = ema(k.c, 25)[i], e99 = ema(k.c, 99)[i], r6 = rsi(k.c, 6)[i], r12 = rsi(k.c, 12)[i], r24 = rsi(k.c, 24)[i], m5 = sma(k.v, 5)[i], m10 = sma(k.v, 10)[i]; return { e7, e25, e99, r6, r12, r24, m5, m10 }; };
+    const a = ind(cl, L), b = ind(all, A), f = (x, d = 6) => isNum(x) ? +x.toPrecision(d) : 'NaN';
+    add(true, 'آخر شمعة مغلقة', `${iso(cl.t[L])} C=${cl.c[L]}`);
+    add(true, 'EMA 7/25/99 (مغلقة)', `${f(a.e7)} / ${f(a.e25)} / ${f(a.e99)}`);
+    add(true, 'RSI 6/12/24 (مغلقة)', `${f(a.r6, 4)} / ${f(a.r12, 4)} / ${f(a.r24, 4)}`);
+    add(true, 'EMA 7/25/99 (مثل التطبيق)', `${f(b.e7)} / ${f(b.e25)} / ${f(b.e99)}`);
+    add(true, 'RSI 6/12/24 (مثل التطبيق)', `${f(b.r6, 4)} / ${f(b.r12, 4)} / ${f(b.r24, 4)}`);
+    add(true, 'VOL · MA5 / MA10 (مثل التطبيق)', `${f(all.v[A])} · ${f(b.m5)} / ${f(b.m10)}`);
+    rep.push(`k15 lastClosed=${iso(cl.t[L])} O=${cl.o[L]} H=${cl.h[L]} L=${cl.l[L]} C=${cl.c[L]} V=${cl.v[L]} gaps=${gaps}`);
+    rep.push(`closed EMA7/25/99=${f(a.e7, 10)}/${f(a.e25, 10)}/${f(a.e99, 10)} RSI6/12/24=${f(a.r6, 8)}/${f(a.r12, 8)}/${f(a.r24, 8)} MA5/10=${f(a.m5, 10)}/${f(a.m10, 10)}`);
+    rep.push(`live(${iso(all.t[A])}) C=${all.c[A]} EMA7/25/99=${f(b.e7, 10)}/${f(b.e25, 10)}/${f(b.e99, 10)} RSI6/12/24=${f(b.r6, 8)}/${f(b.r12, 8)}/${f(b.r24, 8)} VOL=${all.v[A]} MA5/10=${f(b.m5, 10)}/${f(b.m10, 10)}`);
+    if (pr) { const gap = Math.abs(+pr.markPrice / all.c[A] - 1); add(gap < 0.01, 'سعر العلامة قريب من آخر سعر', (gap * 100).toFixed(3) + '%'); }
+  }
+  // ---- Positioning data ----
+  sec('٣. بيانات المراكز والمتداولين');
+  const last = (arr, key) => Array.isArray(arr) && arr.length ? arr.slice().sort((x, y) => +x.timestamp - +y.timestamp).pop() : null;
+  const pos = [['openInterestHist', 'sumOpenInterest', 'الصفقات المفتوحة'], ['globalLS', 'longShortRatio', 'رأي المتداولين'], ['topPosition', 'longShortRatio', 'الحسابات الكبيرة (مراكز)'], ['topAccount', 'longShortRatio', 'الحسابات الكبيرة (عدد)'], ['taker', 'buySellRatio', 'مين مستعجل'], ['basis', 'basisRate', 'Basis']];
+  for (const [k, key, name] of pos) {
+    const r = last(res[k]); if (!r) { add(false, name, 'لا توجد بيانات'); continue; }
+    const age = (now - +r.timestamp) / 60000;
+    add(age < 20 && +r[key] !== 0, `${name} (عمرها ${age.toFixed(0)} د)`, String(r[key]));
+    rep.push(`${k} ts=${r.timestamp} (${new Date(+r.timestamp).toISOString()}) ${key}=${r[key]}${k === 'taker' ? ` buy=${r.buyVol} sell=${r.sellVol}` : ''} ageMin=${age.toFixed(1)}`);
+  }
+  if (res.openInterest) { add(+res.openInterest.openInterest > 0, 'الصفقات المفتوحة الآن', res.openInterest.openInterest); rep.push(`openInterest now=${res.openInterest.openInterest} time=${res.openInterest.time}`); }
+  if (pr) {
+    const h = (Array.isArray(res.fundingInfo) && (res.fundingInfo.find(x => x.symbol === sym) || {}).fundingIntervalHours) || 8;
+    add(isNum(+pr.lastFundingRate), `رسوم التمويل (كل ${h}س)`, pr.lastFundingRate);
+    rep.push(`premium mark=${pr.markPrice} index=${pr.indexPrice} funding=${pr.lastFundingRate} interval=${h}h next=${pr.nextFundingTime}`);
+  }
+  if (res.bookTicker) { const sp = (+res.bookTicker.askPrice - +res.bookTicker.bidPrice) / +res.bookTicker.bidPrice * 100; add(sp < 0.1, 'فرق سعر الشراء/البيع', sp.toFixed(4) + '%'); rep.push(`book bid=${res.bookTicker.bidPrice} ask=${res.bookTicker.askPrice}`); }
+  if (res.ticker24h) rep.push(`ticker last=${res.ticker24h.lastPrice} chg=${res.ticker24h.priceChangePercent}% qv=${res.ticker24h.quoteVolume}`);
+  bar.style.width = '100%';
+  const fails = rows.filter(r => !r.sec && !r.ok).length;
+  $('testSummary').innerHTML = fails ? `<span class="bad">✗ ${fails} فحص لم ينجح</span>` : '<span class="ok">✓ كل الفحوصات نجحت</span>';
+  $('testOut').innerHTML = rows.map(r => r.sec ? `<div class="sec">${r.sec}</div>` : `<div class="tr"><span class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'}</span><span>${esc(r.name)}</span><span class="v">${esc(r.val)}</span></div>`).join('');
+  state.testReport = rep.join('\n');
+  $('testRun').disabled = false;
+}
+function openTest(open) {
+  $('paneTest').classList.toggle('hidden', !open);
+  $('paneCoin').classList.toggle('hidden', open || !$('tabCoin').classList.contains('active'));
+  $('paneRadar').classList.toggle('hidden', open || !$('tabRadar').classList.contains('active'));
+  document.querySelector('.tabs').classList.toggle('hidden', open);
+  if (open) { if (state.symbol) $('testSym').value = state.symbol; window.scrollTo({ top: 0 }); }
+}
+
 /* ===================== UI / EVENTS ===================== */
 function openDD() {
   const q = cleanInput($('symInput').value).replace(/(USDT|USDC)$/, ''); if (!state.universeOK || !q) { closeDD(); return; }
@@ -722,6 +826,10 @@ function bind() {
   $('tabCoin').addEventListener('click', () => setTab('coin'));
   $('tabRadar').addEventListener('click', () => setTab('radar'));
   $('scanBtn').addEventListener('click', scan);
+  $('testLink').addEventListener('click', e => { e.preventDefault(); openTest(true); });
+  $('testBack').addEventListener('click', () => openTest(false));
+  $('testRun').addEventListener('click', selfTest);
+  $('testCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(state.testReport || ''); $('testCopy').textContent = 'تم النسخ ✓'; setTimeout(() => { $('testCopy').textContent = 'نسخ التقرير'; }, 1500); } catch (e) { /* no clipboard */ } });
   $('radarList').addEventListener('click', e => { const r = e.target.closest('.rrow'); if (r) { setTab('coin'); analyze(r.dataset.sym); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
   setInterval(() => { if (!document.hidden && state.symbol && !state.busy && $('paneRadar').classList.contains('hidden') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
 }
@@ -729,6 +837,7 @@ async function init() {
   bind();
   const tf = store.get('tf', '15m'); state.tf = TF_MS[tf] ? tf : '15m';
   document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === state.tf));
+  if (location.hash === '#selftest') { openTest(true); await loadUniverse().catch(() => {}); setStatus('live', 'جاهز'); return; }
   let sym = store.get('sym', ''); const h = decodeURIComponent((location.hash || '').slice(1));
   if (h) { const [s, t] = h.split('@'); if (s) sym = s; if (t && TF_MS[t]) { state.tf = t; document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === t)); } }
   setStatus('loading', 'تحميل قائمة العقود…');
