@@ -176,12 +176,13 @@ button{font:inherit;color:inherit}
 .trow .say{font-size:14px;color:var(--label2);margin-top:4px;line-height:1.5}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
 /* ===================== LIQUID GLASS ===================== */
-.ambient{position:fixed;inset:-10vh -10vw;z-index:-1;pointer-events:none;transition:background 1.2s ease;
+.ambient{position:absolute;inset:0;z-index:-1;pointer-events:none;transition:background 1.2s ease;
   background:radial-gradient(42vmax 42vmax at 85% 8%,rgba(10,132,255,.38),transparent 62%),radial-gradient(38vmax 38vmax at 8% 38%,rgba(191,90,242,.26),transparent 60%),radial-gradient(44vmax 40vmax at 70% 92%,rgba(100,210,255,.20),transparent 60%),#000}
 .ambient[data-tone="down"]{background:radial-gradient(42vmax 42vmax at 85% 8%,rgba(255,69,58,.34),transparent 62%),radial-gradient(38vmax 38vmax at 8% 38%,rgba(191,90,242,.22),transparent 60%),radial-gradient(44vmax 40vmax at 70% 92%,rgba(10,132,255,.20),transparent 60%),#000}
 .ambient[data-tone="up"]{background:radial-gradient(42vmax 42vmax at 85% 8%,rgba(48,209,88,.32),transparent 62%),radial-gradient(38vmax 38vmax at 8% 38%,rgba(10,132,255,.24),transparent 60%),radial-gradient(44vmax 40vmax at 70% 92%,rgba(100,210,255,.20),transparent 60%),#000}
 .ambient[data-tone="flat"]{background:radial-gradient(42vmax 42vmax at 85% 8%,rgba(255,159,10,.28),transparent 62%),radial-gradient(38vmax 38vmax at 8% 38%,rgba(10,132,255,.22),transparent 60%),radial-gradient(44vmax 40vmax at 70% 92%,rgba(191,90,242,.18),transparent 60%),#000}
-body{background:transparent}
+body{background:transparent;position:relative}
+/* the glow scrolls with the page: Safari does not paint fixed layers under its own bars, which left hard edges */
 .search,.card,.tile,.seg,.pill,.list,.more,.msg,.wrow,.dropdown,.btng,.sug{
   position:relative;isolation:isolate;
   background:linear-gradient(160deg,rgba(255,255,255,.13),rgba(255,255,255,.05) 45%,rgba(255,255,255,.07));
