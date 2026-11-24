@@ -65,3 +65,13 @@ test('missing positioning data never produces a situation that needs it', () => 
     for (const id of ['S1', 'S1b', 'S2', 'S3', 'S3b', 'S4', 'S4b', 'S5', 'S5b']) assert.ok(!x.sits.includes(id), id + ' without data @' + i);
   }
 });
+
+test('metricsAt (short-history coins) gives the same position features as detectAt', () => {
+  for (let i = 320; i < k5.c.length; i += 41) {
+    const a = S.detectAt(ser, i, 0.0001, true), b = S.metricsAt(ser, i);
+    for (const k of ['P1h', 'P4h', 'TK1h', 'OI', 'OI1h', 'OI4h', 'OI24h', 'GLS', 'GLSd4h', 'TPOS', 'TPOSd4h', 'metricsAge']) assert.ok(close(a[k], b[k], 1e-12), k + ' @' + i);
+    assert.deepEqual([...b.sits], []);
+  }
+  const early = S.metricsAt(ser, 30);
+  assert.ok(Number.isNaN(early.P4h) && Number.isFinite(early.P1h), 'partial history: P1h yes, P4h not yet');
+});

@@ -50,11 +50,14 @@ button{font:inherit;color:inherit}
 .sugs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .sug{appearance:none;border:0;background:var(--card2);color:var(--label);border-radius:99px;padding:6px 12px;font:600 14px var(--mono);cursor:pointer}
 /* coin header */
-.coin{margin-top:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.coin{margin-top:18px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px}
+.coin>div{min-width:0}
+.tile svg{max-width:100%;height:auto}
+.grid>.tile{min-width:0}
 .coin .sym{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:var(--label2)}
 .fav{appearance:none;border:0;background:none;font-size:20px;line-height:1;color:var(--label3);cursor:pointer;padding:2px}
 .fav.on{color:var(--yellow)}
-.px{font-size:clamp(32px,10vw,42px);font-weight:700;line-height:1.05;margin-top:2px}
+.px{font-size:clamp(28px,9.5vw,42px);overflow-wrap:anywhere;font-weight:700;line-height:1.05;margin-top:2px}
 .upd{font-size:12px;color:var(--label3);margin-top:4px}
 .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .badge{display:inline-flex;align-items:center;gap:3px;height:28px;padding:0 10px;border-radius:8px;font-size:15px;font-weight:700}
@@ -254,27 +257,27 @@ body{background:transparent}
       </div>
     </div>
 
-    <div class="card statusc a" id="cStatus" data-info="status">
+    <div class="card statusc a" id="cStatus" data-info="status" tabindex="0" role="button">
       <div class="ringw"><svg class="ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="ringFill" class="fillr" cx="40" cy="40" r="34" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="214" transform="rotate(-90 40 40)"/></svg><span class="ringt" id="ringTxt"></span></div>
       <div class="txt"><div class="cap">الخلاصة <i class="q">?</i></div><h2 id="rHead">—</h2><p id="rSub"></p></div>
     </div>
     <div class="warns" id="rWarn"></div>
 
-    <div class="card a" id="cChart" data-info="chart">
+    <div class="card a" id="cChart" data-info="chart" tabindex="0" role="button">
       <div class="cap">السعر · <span id="chartSpan"></span><i class="q">?</i></div>
       <svg class="chart" id="chartSvg" viewBox="0 0 360 112" preserveAspectRatio="none" aria-hidden="true"></svg>
       <div class="watch" id="rWatch"></div>
     </div>
 
     <div class="grid">
-      <div class="tile a" id="tCrowd" data-info="crowd"></div>
-      <div class="tile a" id="tMoney" data-info="money"></div>
-      <div class="tile a" id="tFund" data-info="fund"></div>
-      <div class="tile a" id="tSpeed" data-info="speed"></div>
-      <div class="tile wide a" id="tVol" data-info="vol"></div>
+      <div class="tile a" id="tCrowd" data-info="crowd" tabindex="0" role="button"></div>
+      <div class="tile a" id="tMoney" data-info="money" tabindex="0" role="button"></div>
+      <div class="tile a" id="tFund" data-info="fund" tabindex="0" role="button"></div>
+      <div class="tile a" id="tSpeed" data-info="speed" tabindex="0" role="button"></div>
+      <div class="tile wide a" id="tVol" data-info="vol" tabindex="0" role="button"></div>
     </div>
 
-    <div class="card hist a hidden" id="cHist" data-info="hist"></div>
+    <div class="card hist a hidden" id="cHist" data-info="hist" tabindex="0" role="button"></div>
 
     <button class="more" id="allBtn"><span>كل أدوات باينانس</span><span class="dim">‹</span></button>
     <div class="links"><button id="refreshBtn">↻ تحديث</button><button id="copyBtn">نسخ القراءة</button></div>
@@ -320,7 +323,7 @@ body{background:transparent}
   <button id="tabFav"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>المفضلة</button>
 </nav>
 
-<div id="sheet" aria-hidden="true">
+<div id="sheet" aria-hidden="true" inert>
   <div class="dimbg" id="sheetDim"></div>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="shTitle">
     <div class="grab"></div>
@@ -420,12 +423,23 @@ const SHARED = (() => {
     x.sits = s;
     return x;
   }
-  return { isNum, ema, rsi, atr, sma, idxAt, valAt, buildSeries, detectAt, SIT };
+  /** Same position/price features as detectAt, for coins with too little history for situations (no detection). */
+  function metricsAt(S, i) {
+    const k = S.k5; if (i < 0) return null;
+    const c = k.c[i], T = k.ct[i] + 1;
+    const ch = (ser, back) => { const j = idxAt(ser, T); if (j < 0) return { now: NaN, d: NaN, age: NaN }; const now = ser[j].v, prev = valAt(ser, ser[j].t - back); return { now, d: prev > 0 ? (now / prev - 1) : NaN, prev, age: T - ser[j].t }; };
+    const oi1 = ch(S.oi, 36e5), oi4 = ch(S.oi, 4 * 36e5), oi24 = ch(S.oi, 24 * 36e5), g4 = ch(S.gls, 4 * 36e5), tp4 = ch(S.tpos, 4 * 36e5);
+    const sell1h = i >= 11 ? (S.pv[i + 1] - S.pv[i - 11]) - (S.pt[i + 1] - S.pt[i - 11]) : NaN;
+    return { c, T, P1h: i >= 12 ? c / k.c[i - 12] - 1 : NaN, P4h: i >= 48 ? c / k.c[i - 48] - 1 : NaN, VS1h: NaN,
+      TK1h: sell1h > 0 ? (S.pt[i + 1] - S.pt[i - 11]) / sell1h : NaN, OI: oi1.now, OI1h: oi1.d, OI4h: oi4.d, OI24h: oi24.d,
+      GLS: g4.now, GLSd4h: g4.d, GLS4hAgo: g4.prev, TPOS: tp4.now, TPOSd4h: tp4.d, metricsAge: oi1.age, sits: [], short: true };
+  }
+  return { isNum, ema, rsi, atr, sma, idxAt, valAt, buildSeries, detectAt, metricsAt, SIT };
 })();
 /* SHARED:END */
 
 /* ===================== CONFIG / STATE ===================== */
-const { isNum, ema, rsi, sma, buildSeries, detectAt, SIT, idxAt, valAt } = SHARED;
+const { isNum, ema, rsi, sma, buildSeries, detectAt, metricsAt, SIT, idxAt, valAt } = SHARED;
 const API = 'https://fapi.binance.com';
 const TF_MS = { '5m': 3e5, '15m': 9e5, '1h': 36e5 };
 const REQ_TIMEOUT = 8000;
@@ -434,18 +448,20 @@ const REQ_TIMEOUT = 8000;
 // confirmed = on the expected side of the baseline in BOTH halves of the year, ≥100 cases each, ≥20 coins.
 const SIT_BASE_UP = 47.7;
 const SIT_STATS = {"S1":{"n":18,"coins":5,"m60":-0.01628,"up":38.9,"confirmed":false},"S1b":{"n":26,"coins":14,"m60":0.00866,"up":61.5,"confirmed":false},"S2":{"n":470,"coins":36,"m60":0.00069,"up":42.3,"confirmed":false},"S3":{"n":6999,"coins":90,"m60":-0.00101,"up":45.2,"confirmed":true},"S3b":{"n":7050,"coins":90,"m60":0.00086,"up":51.1,"confirmed":true},"S4":{"n":677,"coins":88,"m60":-0.00065,"up":45.9,"confirmed":false},"S4b":{"n":165,"coins":57,"m60":-0.00321,"up":49.7,"confirmed":false},"S5":{"n":13830,"coins":90,"m60":0.00069,"up":48.2,"confirmed":true},"S5b":{"n":15193,"coins":90,"m60":-0.00013,"up":48,"confirmed":false},"S6":{"n":1352,"coins":73,"m60":-0.00006,"up":47.6,"confirmed":false},"S7":{"n":24,"coins":16,"m60":0.00113,"up":37.5,"confirmed":false}};
-const state = { tf: '15m', symbol: '', universe: new Map(), universeOK: false, vols: {}, fundingHours: {}, clockOffset: 0, seq: 0, ctrl: null, busy: false, last: null, ddItems: [], ddIdx: -1, radar: null, scanning: false };
+const state = { backoffUntil: 0, tf: '15m', symbol: '', universe: new Map(), universeOK: false, vols: {}, fundingHours: {}, clockOffset: 0, seq: 0, ctrl: null, busy: false, last: null, ddItems: [], ddIdx: -1, radar: null, scanning: false };
 const serverNow = () => Date.now() + state.clockOffset;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const store = { get(k, d) { try { const v = localStorage.getItem('rd:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('rd:' + k, JSON.stringify(v)); } catch (e) { /* blocked */ } } };
 const N = (v, cls = '') => `<span class="n ${cls}">${v}</span>`;
+const LTR = v => '\u2066' + v + '\u2069';   // isolates numbers like +35.8% inside Arabic text (textContent-safe)
 const pct = (x, d = 2) => !isNum(x) ? '—' : (x > 0 ? '+' : '') + (x * 100).toFixed(d) + '%';
 const pctRaw = (x, d = 2) => !isNum(x) ? '—' : (x > 0 ? '+' : '') + x.toFixed(d) + '%';
 function compact(x) { if (!isNum(x)) return '—'; const a = Math.abs(x); return a >= 1e9 ? (x / 1e9).toFixed(2) + 'B' : a >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : a >= 1e3 ? (x / 1e3).toFixed(1) + 'K' : x.toFixed(2); }
 function tickDec(t) { const s = String(t); if (s.includes('e-')) return parseInt(s.split('e-')[1], 10); const i = s.indexOf('.'); return i < 0 ? 0 : s.slice(i + 1).replace(/0+$/, '').length; }
 const autoDec = p => { const a = Math.abs(p); return a >= 1000 ? 2 : a >= 100 ? 3 : a >= 1 ? 4 : a >= 0.1 ? 5 : a >= 0.01 ? 6 : 8; };
-function fmtP(p, sym = state.symbol) { if (!isNum(p)) return '—'; const m = state.universe.get(sym); const d = m && isNum(m.dec) ? m.dec : autoDec(p); return p.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtP(p, sym = state.symbol) { if (!isNum(p)) return '—'; const m = state.universe.get(sym); if (m && isNum(m.dec)) return p.toLocaleString('en-US', { minimumFractionDigits: m.dec, maximumFractionDigits: m.dec });
+  return p.toLocaleString('en-US', { minimumFractionDigits: Math.min(2, autoDec(p)), maximumFractionDigits: autoDec(p) }); }
 const dur = ms => { if (!isNum(ms) || ms <= 0) return '00:00'; const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
 
 /* ===================== NETWORK ===================== */
@@ -472,7 +488,7 @@ function explain(e) {
     case 'banned': return 'باينانس حظر عنوانك مؤقتاً (418) بسبب كثرة الطلبات — انتظر عدة دقائق.';
     case 'timeout': return 'انتهت مهلة الاتصال بباينانس — أعد المحاولة.';
     case 'network': return 'تعذر الاتصال بباينانس — تحقق من الإنترنت.';
-    case 'bad': return 'باينانس رفض الطلب: ' + esc(e.message) + '.';
+    case 'bad': return 'باينانس رفض الطلب: ' + esc(e.message.replace(/\.+$/, '')) + '.';
     default: return 'خطأ من الخادم: ' + esc(e ? e.message : 'غير معروف');
   }
 }
@@ -540,15 +556,15 @@ function readout(D) {
     `هذي ثلاث متوسطات لسعر العملة: قصير وعادي وطويل. لما تكون مرتبة فوق بعض يكون فيه اتجاه واضح. الحين: ${trend}. متوسط السعر ل${span} هو ${N(fmtP(E25))}، والسعر ${c >= E25 ? 'فوقه' : 'تحته'}${stretched ? ` وبعيد عنه ${N(pct(dist25, 1))} — لما يبتعد كثير غالباً يرجع له` : ''}.`);
   // ---- Speed (RSI 6/12/24) ----
   const r6max = Math.max(...r6.slice(-7, -1).filter(isNum)), r6min = Math.min(...r6.slice(-7, -1).filter(isNum));
-  const spd = R6 >= 80 ? 'طالع بسرعة زيادة' : R6 <= 20 ? 'نازل بسرعة زيادة' : (r6max >= 80 && R6 < R24) ? 'كان طالع بسرعة والحين يهدى' : (r6min <= 20 && R6 > R24) ? 'كان نازل بسرعة والحين يرتد' : 'سرعة طبيعية';
-  T('سرعة الحركة', 'RSI 6/12/24', `${R6.toFixed(1)} / ${R12.toFixed(1)} / ${R24.toFixed(1)}`, spd, spd === 'سرعة طبيعية' ? '' : 'warn',
+  const spd = !isNum(R6) ? 'ما فيه بيانات كافية' : R6 >= 80 ? 'طالع بسرعة زيادة' : R6 <= 20 ? 'نازل بسرعة زيادة' : (r6max >= 80 && R6 < R24) ? 'كان طالع بسرعة والحين يهدى' : (r6min <= 20 && R6 > R24) ? 'كان نازل بسرعة والحين يرتد' : 'سرعة طبيعية';
+  T('سرعة الحركة', 'RSI 6/12/24', [R6, R12, R24].map(v => isNum(v) ? v.toFixed(1) : '—').join(' / '), spd, (spd === 'سرعة طبيعية' || !isNum(R6)) ? '' : 'warn',
     `مقياس من 0 إلى 100 يقول هل السعر يتحرك بسرعة زيادة. فوق 80 يعني طلع بسرعة زيادة (ممكن يتعب ويرجع)، وتحت 20 يعني نزل بسرعة زيادة (ممكن يرتد). الحين: ${spd}.`);
   // ---- Volume ----
-  const vNow = ch.v[L], vRatio = vNow / m5[L - 1];
+  const frac = Math.min(1, Math.max(0.1, (serverNow() - ch.t[L]) / TF_MS[tf])), vNow = ch.v[L], vPace = vNow / frac, vRatio = vPace / m5[L - 1];
   let spikeIdx = -1; for (let q = L; q >= L - 4; q--) if (ch.v[q] >= 3 * m10[q - 1]) { spikeIdx = q; break; }
   const volSt = spikeIdx === L ? 'تداول ضخم الآن' : (spikeIdx >= 0 && vNow < 0.6 * m5[L]) ? 'كان ضخم والحين هدأ' : spikeIdx >= 0 ? 'تداول ضخم قبل قليل' : vRatio >= 1.5 ? 'أعلى من العادة' : vRatio <= 0.5 ? 'أقل من العادة' : 'عادي';
   T('حجم التداول', 'VOL · MA5/MA10', `${compact(vNow)} · ${compact(m5[L])} / ${compact(m10[L])}`, volSt, spikeIdx >= 0 ? 'warn' : '',
-    `كمية البيع والشراء في الشمعة الحالية مقارنة بالعادة: ${N(vRatio.toFixed(1) + '×')} المعدل. التداول الضخم المفاجئ غالباً معناه خبر أو حركة قوية.`);
+    `كمية البيع والشراء في الشمعة الحالية (لسا ما قفلت — محسوبة بوتيرتها الحالية) مقارنة بمعدل آخر 5 شموع: ${N(isNum(vRatio) ? vRatio.toFixed(1) + '×' : '—')}. التداول الضخم المفاجئ غالباً معناه خبر أو حركة قوية.`);
   // ---- Funding ----
   const fr = D.funding, hours = D.fundingHours, f8 = fr * 8 / hours;
   const fSt = !isNum(fr) ? '—' : f8 >= 0.0005 ? 'المراهنين على الصعود يدفعون كثير' : f8 <= -0.0005 ? 'المراهنين على النزول يدفعون كثير' : f8 > 0.0001 ? 'أعلى من العادي شوي' : f8 < 0 ? 'المراهنين على النزول يدفعون' : 'عادي';
@@ -561,9 +577,10 @@ function readout(D) {
     : (p < -0.005 && o > 0.01) ? ['فيه ناس جديدة دخلت تراهن على النزول', 'النزول عليه فلوس جديدة تدفعه.', 'down', 'رهانات نزول جديدة']
     : (p < -0.005 && o < -0.01) ? ['المراهنين على الصعود يطلعون (أو تنقفل صفقاتهم)', 'غالباً بيع اضطراري — ممكن يخلص بسرعة ويرتد.', 'warn', 'ناس تطلع']
     : ['ما تغيّر شي مهم', 'ما فيه دخول أو خروج كبير للفلوس.', '', 'ثابت'];
-  const rg1 = regime(X.P1h, X.OI1h), rg4 = regime(X.P4h, X.OI4h);
-  if (isNum(X.OI)) T('الصفقات المفتوحة', 'O.I.', `$${compact(X.OI * c)} · 1h ${pct(X.OI1h, 1)} · 4h ${pct(X.OI4h, 1)}`, rg1[3], rg1[2],
-    `مجموع الصفقات المفتوحة على العملة (${N('$' + compact(X.OI * c))}). لما يزيد مع حركة السعر، معناه فلوس جديدة تدخل وتدعم الحركة. لما ينقص، معناه ناس تقفل صفقاتها. آخر ساعة: ${rg1[0]}. آخر 4 ساعات: ${rg4[0]}.`);
+  const NORG = ['ما فيه بيانات كافية للمقارنة', 'تحتاج ساعة من البيانات على الأقل.', '', 'غير كافية'];
+  const rg1 = regime(X.P1h, X.OI1h), rg4 = regime(X.P4h, X.OI4h), rg1s = rg1 || NORG, rg4s = rg4 || NORG;
+  if (isNum(X.OI)) T('الصفقات المفتوحة', 'O.I.', `$${compact(X.OI * c)} · 1h ${pct(X.OI1h, 1)} · 4h ${pct(X.OI4h, 1)}`, rg1s[3], rg1s[2],
+    `مجموع الصفقات المفتوحة على العملة (${N('$' + compact(X.OI * c))}). لما يزيد مع حركة السعر، معناه فلوس جديدة تدخل وتدعم الحركة. لما ينقص، معناه ناس تقفل صفقاتها. آخر ساعة: ${rg1s[0]}. آخر 4 ساعات: ${rg4s[0]}.`);
   else T('الصفقات المفتوحة', 'O.I.', '—', 'غير متاحة', '', 'تعذر جلب البيانات الحين.');
   // ---- Crowd ----
   const glsMean = D.m.gls.length ? D.m.gls.reduce((a, x) => a + x.v, 0) / D.m.gls.length : NaN, glsRel = glsMean > 0 ? X.GLS / glsMean - 1 : NaN;
@@ -610,7 +627,7 @@ function readout(D) {
   if (vol24 < 10e6) W('danger', 'تداول ضعيف جداً', `العملة قليلة التداول (${N('$' + compact(vol24))} في اليوم). سهل أحد يحرك سعرها، وممكن تدخل بسعر وتطلع بسعر أسوأ.`);
   if (isNum(X.OI) && X.OI * c < 5e6) W('danger', 'فلوس قليلة على العملة', `مجموع الصفقات المفتوحة ${N('$' + compact(X.OI * c))} بس. شخص واحد كبير يقدر يحرك السعر.`);
   if (isNum(D.spreadPct) && D.spreadPct > 0.1) W('danger', 'فرق سعر كبير', `الفرق بين سعر الشراء والبيع ${N(D.spreadPct.toFixed(2) + '%')} — تخسر هذا الفرق من أول ما تدخل.`);
-  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `تحركت ${pct(X.P4h, 1)} في 4 ساعات`, 'الدخول بعد حركة كبيرة خطر، لأن جزء منها غالباً يرجع.');
+  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `تحركت ${LTR(pct(X.P4h, 1))} في 4 ساعات`, 'الدخول بعد حركة كبيرة خطر، لأن جزء منها غالباً يرجع.');
   if (vol24 >= 10e6 && vol24 < 30e6) W('warn', 'تداول متوسط', `التداول ${N('$' + compact(vol24))} في اليوم — الأفضل تستخدم مبلغ أصغر.`);
   if (D.onboard && serverNow() - D.onboard < 30 * 864e5) W('warn', 'عملة جديدة', `أدرجت في باينانس قبل ${Math.max(1, Math.round((serverNow() - D.onboard) / 864e5))} يوم — حركتها صعب تتوقعها وبياناتها قليلة.`);
   if (isNum(D.markLastGap) && Math.abs(D.markLastGap) > 0.005) W('warn', 'فرق في سعر التصفية', `سعر العلامة (اللي تنحسب عليه التصفية) بعيد عن آخر سعر بـ ${N(pct(D.markLastGap, 2))} — احذر تصفية مفاجئة.`);
@@ -618,20 +635,20 @@ function readout(D) {
 
   // ---- Watch (one plain line) ----
   const hi = Math.max(...ch.h.slice(-50)), lo = Math.min(...ch.l.slice(-50));
-  out.watch = `${c >= E25 ? `لو نزل تحت ${N(fmtP(E25))} يضعف أكثر` : `لو رجع فوق ${N(fmtP(E25))} يتحسن`} (هذا متوسط سعره ل${span}). أعلى سعر قريب ${N(fmtP(hi))}، وأدنى سعر ${N(fmtP(lo))}.`;
+  out.watch = !isNum(E25) ? '' : `${c >= E25 ? `لو نزل تحت ${N(fmtP(E25))} يضعف أكثر` : `لو رجع فوق ${N(fmtP(E25))} يتحسن`} (هذا متوسط سعره ل${span}). أعلى سعر قريب ${N(fmtP(hi))}، وأدنى سعر ${N(fmtP(lo))}.`;
 
   // ---- Headline & caution level ----
   const danger = out.warns.some(w => w.lvl === 'danger');
   out.level = danger ? ['danger', 'خطر', 'مخاطر عالية'] : out.warns.length ? ['alert', 'انتبه', 'فيه أشياء تستاهل الحذر'] : ['calm', 'هادئ', 'ما فيه مخاطر غير عادية'];
   if (out.sits.length) { const s = SIT[out.sits[0]]; out.head = s.name; out.sub = s.desc; }
-  else if (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) { out.head = X.P1h > 0 ? `السعر طار ${pct(X.P1h, 1)} في ساعة` : `السعر طاح ${pct(X.P1h, 1)} في ساعة`; out.sub = `مع تداول ${N(X.VS1h.toFixed(1) + '×')} العادة — حركة قوية وعنيفة.`; }
+  else if (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) { out.head = X.P1h > 0 ? `السعر طار ${LTR(pct(X.P1h, 1))} في ساعة` : `السعر طاح ${LTR(pct(X.P1h, 1))} في ساعة`; out.sub = `مع تداول ${N(X.VS1h.toFixed(1) + '×')} العادة — حركة قوية وعنيفة.`; }
   else if (stackUp) { out.head = c < E25 ? 'كان صاعد، والحين بدأ يضعف' : 'السعر في صعود'; out.sub = trendMean; }
   else if (stackDn) { out.head = c > E25 ? 'كان نازل، والنزول بدأ يهدى' : 'السعر في نزول'; out.sub = trendMean; }
   else { out.head = 'السعر بدون اتجاه واضح'; out.sub = 'يطلع وينزل بدون اتجاه — الحركات فيه غالباً مضللة.'; }
   out.subShort = out.sits.length ? (SIT[out.sits[0]].dir > 0 ? 'ميل إيجابي بسيط' : SIT[out.sits[0]].dir < 0 ? 'ميل سلبي بسيط' : 'الحركة هدأت')
     : (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) ? 'حركة قوية وعنيفة'
     : stackUp ? (c < E25 ? 'انتبه لتغيّر الاتجاه' : 'المشترين مسيطرين') : stackDn ? (c > E25 ? 'ممكن بداية ارتداد' : 'البائعين مسيطرين') : 'السوق متردد';
-  out.v = { tf, span, E25, e25s: e25, hi, lo, R6, R12, R24, spd, vRatio, volSt, spikeIdx, f8, fr, hours, fSt, longPct, crowdLong, crowdShort, glsMean,
+  out.v = { tf, span, chartSpan: { '5m': 'آخر 6 ساعات', '15m': 'آخر 6 ساعات', '1h': 'آخر يوم' }[tf], vPace, m5, E25, e25s: e25, hi, lo, R6, R12, R24, spd, vRatio, volSt, spikeIdx, f8, fr, hours, fSt, longPct, crowdLong, crowdShort, glsMean,
     bigSt, div, rg1, rg4, tkR, tkSt, stackUp, stackDn, trend, trendMean, stretched, dist25, m10 };
   out.c = c; out.f8 = f8;
   return out;
@@ -644,12 +661,11 @@ async function analyze(raw, { silent = false } = {}) {
   if (r.err === 'arabic') { showMsg('اكتب رمز العملة بالحروف الإنجليزية كما في باينانس، مثل <span class="n">CYS</span>.'); return; }
   if (r.err === 'notfound') { showMsg(`ما لقيت عقداً دائماً باسم <b class="n">${esc(r.tok)}</b>.` + (r.sugs.length ? `<div class="sugs">${r.sugs.map(s => `<button class="sug" data-sym="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''), 'error'); return; }
   hideMsg(); closeDD();
-  const sym = r.symbol, tf = state.tf; state.symbol = sym; $('symInput').value = sym; store.set('sym', sym);
+  const sym = r.symbol, tf = state.tf, prevTf = state.last ? state.last.tf : tf; state.symbol = sym; if (!silent) $('symInput').value = sym; store.set('sym', sym);
   try { history.replaceState(null, '', `#${encodeURIComponent(sym)}@${tf}`); } catch (e) { /* sandbox */ }
   if (state.ctrl) state.ctrl.abort(); const ctrl = new AbortController(); state.ctrl = ctrl; const seq = ++state.seq;
   state.busy = true; setStatus('loading', 'جاري القراءة…');
   if (!silent || !state.last || state.last.sym !== sym) showLoading(sym, tf);
-  addRecent(sym);
   const q = 'symbol=' + encodeURIComponent(sym), s = ctrl.signal, pd = 'period=5m&limit=289';
   const reqs = {
     chart: api(`/fapi/v1/klines?${q}&interval=${tf}&limit=499`, s),
@@ -667,12 +683,24 @@ async function analyze(raw, { silent = false } = {}) {
   };
   const keys = Object.keys(reqs).filter(k => reqs[k]);
   const res = {}, errs = {};
-  const settled = await Promise.allSettled(keys.map(k => reqs[k]));
+  // Render as soon as the core data is in; optional sources get 2.5 s more, then are skipped this round.
+  const core = ['chart', 'premium', 'k5', 'k15'].filter(k => reqs[k]);
+  const coreDone = Promise.allSettled(core.map(k => reqs[k]));
+  const grace = coreDone.then(() => new Promise(r2 => setTimeout(r2, 2500)));
+  const settled = await Promise.allSettled(keys.map(k => core.includes(k) ? reqs[k] : Promise.race([reqs[k], grace.then(() => { throw new ApiError('بطيء — تم تجاوزه', 0, 'slow'); })])));
   if (seq !== state.seq) return;
   state.busy = false;
   keys.forEach((k, i) => { if (settled[i].status === 'fulfilled') res[k] = settled[i].value; else errs[k] = settled[i].reason; });
   const fatal = errs.chart || errs.premium || (tf !== '5m' && errs.k5) || (tf !== '15m' && errs.k15);
-  if (fatal) { if (fatal.kind === 'abort') return; setStatus('error', 'خطأ'); showMsg(explain(fatal), 'error'); if (!state.last || state.last.sym !== sym) $('result').classList.add('hidden'); return; }
+  if (fatal) {
+    if (fatal.kind === 'abort') return;
+    if (fatal.kind === 'ratelimit') state.backoffUntil = Date.now() + 60000;
+    if (fatal.kind === 'banned') state.backoffUntil = Date.now() + 300000;
+    setStatus('error', 'خطأ'); showMsg(explain(fatal), 'error');
+    if (state.last && state.last.sym === sym) { state.tf = prevTf; store.set('tf', prevTf); render(state.last); }   // keep the last good reading on screen
+    else $('result').classList.add('hidden');
+    return;
+  }
   try {
     const pr = res.premium;
     if (isNum(+pr.time) && +pr.time > 0) state.clockOffset = +pr.time - Date.now();
@@ -683,7 +711,7 @@ async function analyze(raw, { silent = false } = {}) {
       taker: Array.isArray(res.taker) ? res.taker.map(x => ({ t: +x.timestamp, b: +x.buyVol, s: +x.sellVol })).sort((a, b) => a.t - b.t) : [] };
     const hours = state.fundingHours[sym] || 8, fr = +pr.lastFundingRate;
     const S = buildSeries(k5, k15, m);
-    const x = k5.c.length > 300 ? detectAt(S, k5.c.length - 1, fr * 8 / hours, true) : null;
+    const x = k5.c.length > 300 ? detectAt(S, k5.c.length - 1, fr * 8 / hours, true) : k5.c.length ? metricsAt(S, k5.c.length - 1) : null;
     const t = res.ticker || {}, b = res.book || {}, bid = +b.bidPrice, ask = +b.askPrice;
     const basisArr = Array.isArray(res.basis) ? res.basis.slice().sort((a, b2) => +a.timestamp - +b2.timestamp) : [];
     const D = { sym, tf, chart, x, m, funding: fr, fundingHours: hours, nextFunding: +pr.nextFundingTime, vol24: +t.quoteVolume, chg24: +t.priceChangePercent,
@@ -692,13 +720,16 @@ async function analyze(raw, { silent = false } = {}) {
     const R = readout(D);
     state.last = { sym, tf, D, R, at: now };
     render(state.last);
+    addRecent(sym);
     setStatus('live', 'مباشر');
   } catch (e) { console.error(e); setStatus('error', 'خطأ'); showMsg('حدث خطأ أثناء القراءة: ' + esc(e.message || e), 'error'); }
 }
 
 /* ===================== RADAR ===================== */
 async function scan() {
-  if (state.scanning) return; state.scanning = true; $('scanBtn').disabled = true;
+  if (state.scanning) return;
+  if (Date.now() < state.backoffUntil) { $('scanInfo').textContent = 'باينانس حدّ الطلبات مؤقتاً — انتظر دقيقة وحاول مرة ثانية.'; return; }
+  state.scanning = true; $('scanBtn').disabled = true;
   const bar = $('scanBar'), info = $('scanInfo'); const step = (p, t) => { bar.style.width = p + '%'; info.textContent = t; };
   try {
     step(5, 'جلب كل العقود…');
@@ -743,6 +774,10 @@ async function scan() {
 }
 /* ===================== SELF-TEST ===================== */
 async function selfTest() {
+  try { await selfTestRun(); } catch (e) { console.error(e); $('testSummary').innerHTML = '<span class="bad">✗ تعذر إكمال الفحص: ' + esc(e.message || e) + '</span>'; }
+  finally { $('testRun').disabled = false; }
+}
+async function selfTestRun() {
   const sym = (cleanInput($('testSym').value) || 'BTCUSDT').replace(/^(?!.*USD[TC]$)(.*)$/, '$1USDT');
   const bar = $('testBar'), rows = [], rep = [], q = 'symbol=' + encodeURIComponent(sym), pd = 'period=5m&limit=30';
   $('testRun').disabled = true; $('testCard').classList.remove('hidden'); $('testOut').innerHTML = '<div class="hint">جاري الفحص…</div>';
@@ -769,6 +804,7 @@ async function selfTest() {
   if (res.klines15m) {
     sec('٢. الشموع والمؤشرات (15m)');
     const all = parseK(res.klines15m, now, { closedOnly: false }), cl = parseK(res.klines15m, now), L = cl.c.length - 1, A = all.c.length - 1;
+    if (L < 0 || A < 0) throw new Error('باينانس ما أرسل شموع لهذه العملة');
     let gaps = 0; for (let i = 1; i < all.t.length; i++) if (all.t[i] - all.t[i - 1] !== 9e5) gaps++;
     add(gaps === 0, 'تسلسل الشموع بدون فجوات', gaps + ' gaps');
     add(all.ct.every((ct, i) => ct - all.t[i] === 899999), 'وقت فتح/إغلاق كل شمعة صحيح', 'ct-ot=899999');
@@ -868,10 +904,11 @@ function render(L) {
   const tone = R.sits.length ? (SIT[R.sits[0]].dir > 0 ? 'up' : SIT[R.sits[0]].dir < 0 ? 'down' : 'flat') : (v.stackUp && R.c >= v.E25) ? 'up' : (v.stackDn && R.c <= v.E25) ? 'down' : 'flat';
   $('cStatus').className = 'card statusc a t-' + tone; $('ambient').dataset.tone = tone;
   $('rHead').textContent = R.head; $('rSub').textContent = R.subShort;
-  $('rWarn').innerHTML = R.warns.slice(0, 3).map((w, i) => `<div class="wrow ${w.lvl}" data-warn="${i}"><span>${w.lvl === 'danger' ? '⛔' : '⚠️'}</span><span style="flex:1">${w.s}</span>${Q}</div>`).join('');
+  $('rWarn').innerHTML = R.warns.slice(0, 3).map((w, i) => `<div class="wrow ${w.lvl}" data-warn="${i}" tabindex="0" role="button"><span>${w.lvl === 'danger' ? '⛔' : '⚠️'}</span><span style="flex:1">${w.s}</span>${Q}</div>`).join('');
   // chart
-  $('chartSpan').textContent = v.span; $('chartSvg').innerHTML = chartSVG(L);
-  $('rWatch').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" stroke="#ff9f0a" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ff9f0a"/></svg>راقب <b class="n">${fmtP(v.E25)}</b> — ${R.c >= v.E25 ? 'تحته يضعف' : 'فوقه يتحسن'}`;
+  $('chartSpan').textContent = v.chartSpan; $('chartSvg').innerHTML = chartSVG(L);
+  $('rWatch').classList.toggle('hidden', !isNum(v.E25));
+  $('rWatch').innerHTML = !isNum(v.E25) ? '' : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" stroke="#ff9f0a" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ff9f0a"/></svg>راقب <b class="n">${fmtP(v.E25)}</b> — ${R.c >= v.E25 ? 'تحته يضعف' : 'فوقه يتحسن'}`;
   // crowd
   const lp = v.longPct, bigCol = v.div === 'sell' ? 'var(--red)' : v.div === 'buy' ? 'var(--green)' : 'var(--label2)';
   $('tCrowd').innerHTML = isNum(lp) ? `<div class="cap">المتداولين ${Q}</div>
@@ -886,9 +923,9 @@ function render(L) {
     <div><div class="v n" style="color:${o1 > 0.01 ? 'var(--green)' : o1 < -0.01 ? 'var(--red)' : 'var(--label2)'}">${pct(o1, 1)}</div><div class="s">${o1 > 0.01 ? 'دخلت آخر ساعة' : o1 < -0.01 ? 'طلعت آخر ساعة' : 'ثابتة آخر ساعة'}</div></div>`
     : `<div class="cap">الفلوس</div><div class="s">غير متاحة الآن</div>`;
   // funding dial
-  const f8 = v.f8, deg = clampN(f8 / 0.001, -1, 1) * 75, fWord = f8 >= 0.0005 ? 'زحمة صعود' : f8 <= -0.0005 ? 'زحمة نزول' : 'عادية';
+  const f8 = v.f8, deg = clampN(f8 / 0.0008, -1, 1) * 60, fWord = f8 >= 0.0005 ? 'زحمة صعود' : f8 <= -0.0005 ? 'زحمة نزول' : 'عادية';
   $('tFund').innerHTML = `<div class="cap">الرسوم ${Q}</div>
-    <svg width="120" height="64" viewBox="0 0 120 64" style="align-self:center"><path d="M12 56 A48 48 0 0 1 108 56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8" stroke-linecap="round"/><path d="M12 56 A48 48 0 0 1 36 15" fill="none" stroke="#30d158" stroke-width="8" stroke-linecap="round"/><path d="M84 15 A48 48 0 0 1 108 56" fill="none" stroke="#ff453a" stroke-width="8" stroke-linecap="round"/><g class="needle" style="--deg:${deg.toFixed(1)}deg"><line x1="60" y1="56" x2="60" y2="16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g><circle cx="60" cy="56" r="5" fill="#fff"/></svg>
+    <svg width="120" height="64" viewBox="0 0 120 64" style="align-self:center"><path d="M12 56 A48 48 0 0 1 108 56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8" stroke-linecap="round"/><path d="M12 56 A48 48 0 0 1 30.8 17.9" fill="none" stroke="#64d2ff" stroke-width="8" stroke-linecap="round"/><path d="M89.2 17.9 A48 48 0 0 1 108 56" fill="none" stroke="#ff9f0a" stroke-width="8" stroke-linecap="round"/><g class="needle" style="--deg:${deg.toFixed(1)}deg"><line x1="60" y1="56" x2="60" y2="16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g><circle cx="60" cy="56" r="5" fill="#fff"/></svg>
     <div class="s" style="text-align:center">${fWord}${v.hours < 8 ? ` · كل ${v.hours}س` : ''}</div>`;
   // speed ring (RSI 6)
   const r6 = v.R6, rc = r6 >= 80 || r6 <= 20 ? '#ff9f0a' : '#64d2ff', sw = v.spd === 'سرعة طبيعية' ? 'طبيعية' : r6 >= 80 ? 'سريعة لفوق' : r6 <= 20 ? 'سريعة لتحت' : v.spd.includes('يهدى') ? 'تهدى' : v.spd.includes('يرتد') ? 'ترتد' : 'طبيعية';
@@ -896,7 +933,7 @@ function render(L) {
     <div class="ringw" style="align-self:center"><svg width="78" height="78" viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle class="fillr" cx="40" cy="40" r="34" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="214" transform="rotate(-90 40 40)" style="--c:214;--o:${(214 * (1 - clampN(r6, 0, 100) / 100)).toFixed(1)}"/></svg><span class="ringt n" style="font-size:20px;color:#fff">${isNum(r6) ? r6.toFixed(0) : '—'}</span></div>
     <div class="s" style="text-align:center">${sw}</div>`;
   // volume bars (last 12 candles vs average)
-  const cv = D.chart.v, k0 = Math.max(0, cv.length - 12), vs = cv.slice(k0), avg = v.m10[cv.length - 2], mx = Math.max(...vs, avg || 0) || 1;
+  const cv = D.chart.v, k0 = Math.max(0, cv.length - 12), vs = cv.slice(k0), avg = v.m5[cv.length - 2], mx = Math.max(...vs, avg || 0) || 1;
   const bars = vs.map((x, i) => { const h = Math.max(3, x / mx * 46), last = i === vs.length - 1; return `<rect class="bar" x="${i * 25 + 2}" y="${50 - h}" width="17" height="${h}" rx="4" fill="${last ? '#0a84ff' : 'rgba(235,235,245,.28)'}" style="transition-delay:${(i * 0.04).toFixed(2)}s"/>`; }).join('');
   const ay = 50 - (avg / mx) * 46;
   $('tVol').innerHTML = `<div class="cap">حجم التداول ${Q}</div>
@@ -920,8 +957,8 @@ const clampN = (x, a, b) => Math.min(b, Math.max(a, isNum(x) ? x : 0));
 
 /* ===================== EXPLANATION SHEETS ===================== */
 function sec(t, p, now) { return `<div class="shs"><h4>${t}</h4><p${now ? ' class="now"' : ''}>${p}</p></div>`; }
-function openSheet(title, html) { $('shTitle').textContent = title; $('shBody').innerHTML = html; $('sheet').classList.add('show'); $('sheet').setAttribute('aria-hidden', 'false'); }
-function closeSheet() { $('sheet').classList.remove('show'); $('sheet').setAttribute('aria-hidden', 'true'); }
+function openSheet(title, html) { state.sheetFrom = document.activeElement; $('shTitle').textContent = title; $('shBody').innerHTML = html; const sh = $('sheet'); sh.removeAttribute('inert'); sh.classList.add('show'); sh.setAttribute('aria-hidden', 'false'); setTimeout(() => $('shClose').focus(), 50); }
+function closeSheet() { const sh = $('sheet'); if (!sh.classList.contains('show')) return; sh.classList.remove('show'); sh.setAttribute('aria-hidden', 'true'); sh.setAttribute('inert', ''); if (state.sheetFrom && state.sheetFrom.focus) state.sheetFrom.focus(); }
 function info(key) {
   const L = state.last; if (!L) return; const { D, R } = L, v = R.v, X = D.x || {};
   const t = { status: 'الخلاصة', chart: 'السعر والمتوسط', crowd: 'المتداولين', money: 'الفلوس (الصفقات المفتوحة)', fund: 'رسوم التمويل', speed: 'سرعة الحركة', vol: 'حجم التداول', hist: 'وش صار في الماضي؟' }[key];
@@ -929,23 +966,23 @@ function info(key) {
   if (key === 'status') h = sec('وش هي؟', 'جملة وحدة تجمع كل أدوات باينانس للعملة. والحلقة الملونة هي <b>مستوى الحذر</b>: تقيس المخاطر (سيولة، حركة كبيرة، عملة جديدة…) — مو اتجاه السعر.')
     + sec('وش تقول الحين؟', `${R.head}. ${R.sub}<br>مستوى الحذر «${R.level[1]}»: ${R.level[2]}.`, true)
     + sec('كيف تستفيد؟', 'اقرأ الخلاصة أول، وبعدها شوف البطاقات تحتها. لو الحذر «خطر» الأفضل تبتعد عن العملة مهما كان الاتجاه.');
-  if (key === 'chart') h = sec('وش هو؟', `الخط الملون هو سعر العملة ل${v.span}. والخط البرتقالي المتقطع هو <b>متوسط السعر</b> (EMA25) — يعطيك "السعر الطبيعي" للفترة.`)
-    + sec('وش يقول الحين؟', `السعر ${R.c >= v.E25 ? 'فوق' : 'تحت'} المتوسط (${N(fmtP(v.E25))}) بـ ${N(pct(v.dist25, 1))}. ${v.trend}.`, true)
+  if (key === 'chart') h = sec('وش هو؟', `الخط الملون هو سعر العملة ل${v.chartSpan}. والخط البرتقالي المتقطع هو <b>متوسط السعر</b> (EMA25 — تقريباً متوسط ${v.span}) — يعطيك "السعر الطبيعي".`)
+    + sec('وش يقول الحين؟', isNum(v.E25) ? `السعر ${R.c >= v.E25 ? 'فوق' : 'تحت'} المتوسط (${N(fmtP(v.E25))}) بـ ${N(pct(v.dist25, 1))}. ${v.trend}.` : 'العملة جديدة وما فيه شموع كافية لحساب المتوسط.', true)
     + sec('كيف تستفيد؟', 'السعر فوق المتوسط = المشترين أقوى، وتحته = البائعين أقوى. ولما يبتعد السعر كثير عن المتوسط غالباً يرجع له. الرقم المكتوب في «راقب» هو هذا المتوسط.');
   if (key === 'crowd') h = sec('وش هو؟', 'نسبة الحسابات اللي راهنت على <b>الصعود</b> (لونج) مقابل اللي راهنت على <b>النزول</b> (شورت). و«الكبار» 🐋 هم أكبر 20% حسابات في باينانس.')
-    + sec('وش يقول الحين؟', `${N(v.longPct.toFixed(0) + '%')} من المتداولين مع الصعود (معدلها اليومي ${N((v.glsMean / (1 + v.glsMean) * 100).toFixed(0) + '%')}). الكبار: ${v.bigSt}.`, true)
+    + sec('وش يقول الحين؟', isNum(v.longPct) ? `${N(v.longPct.toFixed(0) + '%')} من المتداولين مع الصعود${isNum(v.glsMean) ? ` (معدلها اليومي ${N((v.glsMean / (1 + v.glsMean) * 100).toFixed(0) + '%')})` : ''}. الكبار: ${isNum(X.TPOS) ? v.bigSt : 'غير متاح'}.` : 'باينانس ما أرسل بيانات المتداولين لهذه العملة الحين (غالباً عملة جديدة).', true)
     + sec('كيف تستفيد؟', 'لما الأغلبية كلهم في جهة وحدة، السعر أحياناً يعاكسهم. وانتبه أكثر لما الكبار يعاكسون الصغار — في اختبارنا على سنة كان هذا ميل بسيط لجهة الكبار.');
   if (key === 'money') h = sec('وش هي؟', 'مجموع <b>الصفقات المفتوحة</b> على العملة (Open Interest). لما تزيد يعني فلوس جديدة دخلت، ولما تنقص يعني ناس قفلت صفقاتها.')
-    + sec('وش تقول الحين؟', `آخر ساعة: ${v.rg1 ? v.rg1[0] : '—'} (${N(pct(X.OI1h, 1))}). آخر 4 ساعات: ${v.rg4 ? v.rg4[0] : '—'}. المجموع ${N('$' + compact(X.OI * R.c))}.`, true)
+    + sec('وش تقول الحين؟', isNum(X.OI) ? `آخر ساعة: ${v.rg1 ? v.rg1[0] + ` (${N(pct(X.OI1h, 1))})` : 'ما فيه بيانات كافية'}. آخر 4 ساعات: ${v.rg4 ? v.rg4[0] : 'ما فيه بيانات كافية'}. المجموع ${N('$' + compact(X.OI * R.c))}.` : 'باينانس ما أرسل بيانات الصفقات المفتوحة لهذه العملة الحين.', true)
     + sec('كيف تستفيد؟', '• سعر ↑ وفلوس ↑ = صعود قوي عليه فلوس جديدة.<br>• سعر ↑ وفلوس ↓ = صعود أضعف (ناس تقفل).<br>• سعر ↓ وفلوس ↑ = نزول قوي.<br>• سعر ↓ وفلوس ↓ = بيع اضطراري غالباً يخلص بسرعة.');
   if (key === 'fund') h = sec('وش هي؟', `رسوم يدفعها أحد الطرفين للثاني كل ${v.hours} ساعات. لو المراهنين على الصعود أكثر، هم اللي يدفعون — والعكس.`)
     + sec('وش تقول الحين؟', `${N(pct(v.fr, 4))} كل ${v.hours} ساعات — ${v.fSt}. الدفعة الجاية بعد ${N(dur(D.nextFunding - serverNow()))}.`, true)
-    + sec('كيف تستفيد؟', 'الإبرة في الأخضر = عادي أو المراهنين على النزول يدفعون. في الأحمر = الرهان على الصعود مزدحم ومكلف، وهذا وقود لنزول مفاجئ. ولو باينانس صارت تحسبها كل ساعة أو 4 ساعات بدل 8، معناه السوق مزدحم جداً.');
+    + sec('كيف تستفيد؟', 'الإبرة في <b>النص</b> = عادي. في <b>البرتقالي (يمين)</b> = الرهان على الصعود مزدحم ومكلف، وهذا وقود لنزول مفاجئ. في <b>الأزرق (يسار)</b> = الرهان على النزول مزدحم، وممكن يصير ارتفاع مفاجئ. ولو باينانس صارت تحسبها كل ساعة أو 4 ساعات بدل 8، معناه السوق مزدحم جداً.');
   if (key === 'speed') h = sec('وش هي؟', 'مقياس من 0 لـ 100 (اسمه RSI) يقيس هل السعر يتحرك بسرعة زيادة. الرقم في الحلقة هو المقياس السريع (RSI6).')
-    + sec('وش تقول الحين؟', `${N(v.R6.toFixed(0))} — ${v.spd}. (المتوسط ${N(v.R12.toFixed(0))}، والبطيء ${N(v.R24.toFixed(0))})`, true)
+    + sec('وش تقول الحين؟', `${N(isNum(v.R6) ? v.R6.toFixed(0) : '—')} — ${v.spd}. (المتوسط ${N(isNum(v.R12) ? v.R12.toFixed(0) : '—')}، والبطيء ${N(isNum(v.R24) ? v.R24.toFixed(0) : '—')})`, true)
     + sec('كيف تستفيد؟', 'فوق 80 = طلع بسرعة زيادة وممكن يتعب ويرجع. تحت 20 = نزل بسرعة زيادة وممكن يرتد. بين 20 و80 طبيعي.');
-  if (key === 'vol') h = sec('وش هو؟', 'كمية البيع والشراء في كل شمعة. الأعمدة آخر 12 شمعة، والأزرق هي الشمعة الحالية (لسا ما قفلت)، والخط البرتقالي هو المعدل.')
-    + sec('وش يقول الحين؟', `الشمعة الحالية ${N(isNum(v.vRatio) ? v.vRatio.toFixed(1) + '×' : '—')} المعدل — ${v.volSt}.`, true)
+  if (key === 'vol') h = sec('وش هو؟', 'كمية البيع والشراء في كل شمعة. الأعمدة آخر 12 شمعة، والأزرق هي الشمعة الحالية (لسا ما قفلت)، والخط البرتقالي هو معدل آخر 5 شموع.')
+    + sec('وش يقول الحين؟', `الشمعة الحالية بوتيرتها الحالية ${N(isNum(v.vRatio) ? v.vRatio.toFixed(1) + '×' : '—')} معدل آخر 5 شموع — ${v.volSt}.`, true)
     + sec('كيف تستفيد؟', 'تداول ضخم مفاجئ (3 أضعاف أو أكثر) غالباً معناه خبر أو حركة قوية، والحركات بعدها تكون عنيفة. الحركة وقت التداول الضعيف أقل موثوقية.');
   if (key === 'hist' && R.sits.length) { const id = R.sits[0], s = SIT_STATS[id];
     h = sec('وش هو؟', `«${SIT[id].name}»: ${SIT[id].desc}`)
@@ -972,13 +1009,13 @@ function copyText() {
 const favs = () => store.get('favs', []), recents = () => store.get('recent', []);
 function addRecent(sym) { store.set('recent', [sym, ...recents().filter(s => s !== sym)].slice(0, 10)); renderPills(); }
 function toggleFav() { const s = state.symbol; if (!s) return; const f = favs(); store.set('favs', f.includes(s) ? f.filter(x => x !== s) : [s, ...f]); syncFav(); renderPills(); }
-function syncFav() { const on = favs().includes(state.symbol); $('favBtn').textContent = on ? '★' : '☆'; $('favBtn').classList.toggle('on', on); }
+function syncFav() { const on = favs().includes(state.symbol), b = $('favBtn'); b.textContent = on ? '★' : '☆'; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'إزالة من المفضلة' : 'أضف للمفضلة'); }
 function renderPills() {
   const f = favs(), list = [...f, ...recents().filter(s => !f.includes(s))].slice(0, 12);
   $('pills').innerHTML = list.map(s => `<button class="pill${s === state.symbol ? ' on' : ''}" data-sym="${esc(s)}">${f.includes(s) ? '★ ' : ''}${esc(s.replace(/USDT$/, ''))}</button>`).join('');
 }
 function renderFavPane() {
-  const row = s => `<div class="lrow" data-sym="${esc(s)}"><span class="s">${esc(s)}</span><span class="rp dim">${state.vols[s] ? '$' + compact(state.vols[s]) : ''}</span></div>`;
+  const row = s => `<div class="lrow" data-sym="${esc(s)}" tabindex="0" role="button"><span class="s">${esc(s)}</span><span class="rp dim">${state.vols[s] ? '$' + compact(state.vols[s]) : ''}</span></div>`;
   $('favList').innerHTML = favs().map(row).join('') || '<div class="empty">اضغط ☆ جنب اسم أي عملة عشان تضيفها هنا.</div>';
   $('recentList').innerHTML = recents().map(row).join('') || '<div class="empty">ما فتحت عملات للحين.</div>';
 }
@@ -997,7 +1034,7 @@ function renderRadar() {
     if (r.h < 8) tags.push([4, `<span class="tag warn">رسوم كل ${r.h}س</span>`]);
     if (r.GLS >= 3) tags.push([3, '<span class="tag warn">الأغلبية مع الصعود</span>']); else if (r.GLS <= 0.6) tags.push([3, '<span class="tag warn">الأغلبية مع النزول</span>']);
     tags.sort((a, b) => b[0] - a[0]);
-    return `<div class="lrow" data-sym="${esc(r.s)}"><span class="s">${esc(r.s.replace(/USDT$/, ''))}</span><span class="rp">${fmtP(r.px, r.s)} <span class="${r.chg >= 0 ? 'up' : 'down'}">${pctRaw(r.chg, 1)}</span></span><div class="tags">${tags.slice(0, 3).map(t => t[1]).join('') || '<span class="tag">نشاط عادي</span>'}</div></div>`;
+    return `<div class="lrow" data-sym="${esc(r.s)}" tabindex="0" role="button"><span class="s">${esc(r.s.replace(/USDT$/, ''))}</span><span class="rp">${fmtP(r.px, r.s)} <span class="${r.chg >= 0 ? 'up' : 'down'}">${pctRaw(r.chg, 1)}</span></span><div class="tags">${tags.slice(0, 3).map(t => t[1]).join('') || '<span class="tag">نشاط عادي</span>'}</div></div>`;
   }).join('') || '<div class="empty">ما فيه نشاط غير طبيعي الآن.</div>';
 }
 
@@ -1040,6 +1077,7 @@ function bind() {
     const c = e.target.closest('[data-info]'); if (c) info(c.dataset.info);
   });
   $('allBtn').addEventListener('click', allTools);
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][tabindex]')) { e.preventDefault(); e.target.click(); } });
   $('sheetDim').addEventListener('click', closeSheet); $('shClose').addEventListener('click', closeSheet);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
   $('refreshBtn').addEventListener('click', () => { if (state.symbol) analyze(state.symbol, { silent: true }); });
@@ -1053,7 +1091,7 @@ function bind() {
   $('testBack').addEventListener('click', () => openTest(false));
   $('testRun').addEventListener('click', selfTest);
   $('testCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(state.testReport || ''); $('testCopy').textContent = 'تم النسخ ✓'; setTimeout(() => { $('testCopy').textContent = 'نسخ التقرير'; }, 1500); } catch (e) { /* no clipboard */ } });
-  setInterval(() => { if (!document.hidden && state.symbol && !state.busy && !$('paneCoin').classList.contains('hidden') && !$('sheet').classList.contains('show') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
+  setInterval(() => { if (!document.hidden && state.symbol && !state.busy && Date.now() > state.backoffUntil && document.activeElement !== $('symInput') && $('symList').classList.contains('hidden') && !$('paneCoin').classList.contains('hidden') && !$('sheet').classList.contains('show') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
 }
 async function init() {
   bind(); renderPills();
@@ -1064,6 +1102,7 @@ async function init() {
   setStatus('loading', 'تحميل…');
   await loadUniverse().catch(() => {});
   setStatus(state.universeOK ? 'live' : 'error', state.universeOK ? 'جاهز' : 'تعذر تحميل القائمة');
+  if (state.seq > 0) return;   // the user already started an analysis while the list was loading
   if (sym) analyze(sym); else $('symInput').focus();
 }
 init();
