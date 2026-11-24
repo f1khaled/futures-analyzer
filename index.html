@@ -21,6 +21,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
+html{background:#000}
 body{min-height:100vh;background:var(--bg);background-color:var(--bg);color:var(--label);font-family:var(--font);font-size:17px;line-height:1.4;-webkit-font-smoothing:antialiased;letter-spacing:0;overflow-x:hidden}
 button{font:inherit;color:inherit}
 .n{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
@@ -208,8 +209,8 @@ body{background:transparent}
 .tile .ringw{width:78px;height:78px}
 /* floating glass tab bar */
 .tabbar{left:16px;right:16px;bottom:calc(10px + env(safe-area-inset-bottom));height:64px;padding:0 6px;border-radius:32px;max-width:448px;margin:0 auto;
-  background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.18);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 12px 34px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(28px) saturate(200%);backdrop-filter:blur(28px) saturate(200%)}
+  background:linear-gradient(160deg,rgba(72,72,78,.62),rgba(28,28,32,.72));border:1px solid rgba(255,255,255,.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 12px 34px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%)}
 .tabbar button{flex:1;height:54px;border-radius:27px;padding-top:4px;transition:background .3s,color .3s}
 .tabbar button.on{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .pane{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
@@ -220,11 +221,12 @@ body{background:transparent}
 .shx{background:rgba(255,255,255,.12)}
 #sheet .panel{transform:translateY(calc(100% + 80px));visibility:hidden;transition:transform .42s var(--ease),visibility 0s linear .42s}
 #sheet.show .panel{transform:none;visibility:visible;transition:transform .42s var(--ease)}
-/* scroll-edge effect: content fades out under the status bar and behind the tab bar */
-.edgeTop,.edgeBot{position:fixed;left:0;right:0;z-index:9;pointer-events:none}
-.edgeTop{top:0;height:calc(env(safe-area-inset-top) + 18px);background:linear-gradient(180deg,rgba(0,0,0,.88) 0%,rgba(0,0,0,.6) 65%,rgba(0,0,0,0));
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
-.edgeBot{bottom:0;height:calc(96px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.9) 0%,rgba(0,0,0,.65) 45%,rgba(0,0,0,0))}
+/* status-bar fade: only when opened from the Home Screen (in Safari, Safari owns the bars) */
+.edgeTop{display:none}
+@media (display-mode:standalone){
+  .edgeTop{display:block;position:fixed;top:0;left:0;right:0;z-index:9;pointer-events:none;height:calc(env(safe-area-inset-top) + 14px);
+    background:linear-gradient(180deg,#000 0%,#000 calc(100% - 14px),rgba(0,0,0,0) 100%)}
+}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .search,.card,.tile,.seg,.pill,.list,.more,.msg,.wrow,.dropdown,.btng,.sug,.tabbar{background:#1c1c1e}
 }
@@ -237,7 +239,7 @@ body{background:transparent}
 <body>
 
 <div class="ambient" id="ambient" aria-hidden="true"></div>
-<div class="edgeTop" aria-hidden="true"></div><div class="edgeBot" aria-hidden="true"></div>
+<div class="edgeTop" aria-hidden="true"></div>
 <!-- ============ ANALYSE ============ -->
 <section id="paneCoin" class="pane">
   <div class="lt-row"><h1 class="lt">تحليل</h1><span class="status" aria-live="polite"><span class="dot" id="dot"></span><span id="statusText">جاهز</span></span></div>
