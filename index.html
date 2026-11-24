@@ -12,226 +12,269 @@
 <style>
 :root{
   color-scheme:dark;
-  --bg:#07080c; --border:rgba(255,255,255,.12); --soft:rgba(255,255,255,.07);
-  --text:#f3f4f7; --muted:#9aa1b2; --dim:#666d7d;
-  --up:#00e887; --up-s:rgba(0,232,135,.12); --down:#ff3d6e; --down-s:rgba(255,61,110,.12);
-  --warn:#ffb224; --warn-s:rgba(255,178,36,.12); --info:#5ac8fa; --info-s:rgba(90,200,250,.12);
-  --font:-apple-system,BlinkMacSystemFont,"SF Arabic","SF Pro Text","Segoe UI","Noto Sans Arabic",Tahoma,Arial,sans-serif;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#000;--card:#1c1c1e;--card2:#2c2c2e;--sep:rgba(84,84,88,.4);--label:#fff;--label2:rgba(235,235,245,.62);--label3:rgba(235,235,245,.32);
+  --green:#30d158;--red:#ff453a;--orange:#ff9f0a;--blue:#0a84ff;--teal:#64d2ff;--yellow:#ffd60a;--gray:#8e8e93;
+  --gs:rgba(48,209,88,.16);--rs:rgba(255,69,58,.16);--os:rgba(255,159,10,.16);--bs:rgba(10,132,255,.16);
+  --font:-apple-system,BlinkMacSystemFont,"SF Arabic","SF Pro Display","SF Pro Text","Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;
+  --mono:-apple-system,"SF Pro Rounded",ui-rounded,"SF Pro Display",system-ui,sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
-body{min-height:100vh;font-family:var(--font);font-size:15.5px;line-height:1.6;color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;
-  background:radial-gradient(900px 600px at 85% -10%,rgba(40,90,255,.16),transparent 60%),radial-gradient(700px 500px at 0% 100%,rgba(0,200,120,.06),transparent 60%),var(--bg);background-color:var(--bg)}
-.n{font-family:var(--mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;letter-spacing:-.01em}
-.up{color:var(--up)}.down{color:var(--down)}.warnc{color:var(--warn)}.muted{color:var(--muted)}.dim{color:var(--dim)}
+body{min-height:100vh;background:var(--bg);background-color:var(--bg);color:var(--label);font-family:var(--font);font-size:17px;line-height:1.35;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;overflow-x:hidden}
+button{font:inherit;color:inherit}
+.n{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.up{color:var(--green)}.down{color:var(--red)}.warnc{color:var(--orange)}.muted{color:var(--label2)}.dim{color:var(--label3)}
 .hidden{display:none !important}
-.wrap{max-width:760px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px max(32px,env(safe-area-inset-bottom))}
-.glass{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid var(--border);border-radius:20px;
-  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);box-shadow:0 16px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1)}
-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 12px}
-.brand{display:flex;align-items:center;gap:10px}
-.logo{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--info-s);border:1px solid rgba(90,200,250,.35)}
-.brand h1{margin:0;font-size:16.5px;font-weight:750}
-.brand small{display:block;font-size:11.5px;color:var(--dim);margin-top:-2px}
-.status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);white-space:nowrap}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
-.dot.live{background:var(--up);box-shadow:0 0 10px var(--up)}.dot.loading{background:var(--info);animation:blink 1s infinite}.dot.error{background:var(--down)}
+.pane{max-width:480px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 16px calc(100px + env(safe-area-inset-bottom))}
+.lt-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:6px 0 10px}
+.lt{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:0}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--label3);padding-bottom:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gray)}
+.dot.live{background:var(--green)}.dot.loading{background:var(--blue);animation:blink 1s infinite}.dot.error{background:var(--red)}
 @keyframes blink{50%{opacity:.3}}
-.tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:rgba(0,0,0,.3);border:1px solid var(--soft);margin-bottom:12px}
-.tab{flex:1;appearance:none;border:0;background:transparent;color:var(--muted);font:700 14.5px var(--font);height:40px;border-radius:10px;cursor:pointer}
-.tab.active{background:rgba(255,255,255,.12);color:var(--text)}
-.box{padding:12px;position:relative;z-index:20}
-.inrow{display:flex;gap:8px}
-.field{flex:1;min-width:0;position:relative}
-.field input{width:100%;height:52px;padding:0 14px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid var(--soft);color:var(--text);font:600 17px var(--font);outline:0;text-align:right}
-.field input::placeholder{color:var(--dim);font-weight:500;font-size:15px}
-.field input:focus{border-color:rgba(90,200,250,.6);box-shadow:0 0 0 4px rgba(90,200,250,.12)}
-.btn{appearance:none;height:52px;padding:0 18px;border-radius:14px;border:0;cursor:pointer;font:700 15px var(--font);white-space:nowrap}
-.btn:active{transform:scale(.97)}
-.btn.primary{background:linear-gradient(180deg,#7fd8ff,#36b4f0);color:#04121b}
-.btn.ghost{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--soft)}
-.btn.sm{height:38px;font-size:13px;padding:0 12px}
-.btn:disabled{opacity:.5}
-.sub-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
-.chips{display:flex;gap:4px;padding:3px;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--soft)}
-.chip{appearance:none;border:0;background:transparent;color:var(--muted);font:650 13px var(--mono);height:34px;padding:0 14px;border-radius:9px;cursor:pointer}
-.chip.active{background:rgba(255,255,255,.12);color:var(--text)}
-.hint{font-size:12px;color:var(--dim)}
-.dropdown{position:absolute;left:0;right:0;top:calc(100% + 6px);max-height:min(320px,50vh);overflow-y:auto;padding:5px;border-radius:14px;background:#11131b;border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.6);z-index:40}
-.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:9px;cursor:pointer;min-height:44px;font-size:14px}
-.opt:hover,.opt.active{background:rgba(255,255,255,.07)}
-.msg{margin-top:12px;padding:12px 14px;border-radius:14px;font-size:14px;border:1px solid var(--soft);background:rgba(255,255,255,.04)}
-.msg.error{border-color:rgba(255,61,110,.35);background:var(--down-s);color:#ffd3de}
+.searchwrap{position:relative;z-index:30}
+.search{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 10px;border-radius:12px;background:var(--card)}
+.search input{flex:1;min-width:0;height:100%;background:none;border:0;outline:0;color:var(--label);font:500 17px var(--font);text-align:right}
+.search input::placeholder{color:var(--label3)}
+.search .p{appearance:none;border:0;background:none;color:var(--blue);font-size:15px;font-weight:600;padding:6px 8px;cursor:pointer}
+.dropdown{position:absolute;left:0;right:0;top:calc(100% + 6px);max-height:min(320px,50vh);overflow-y:auto;padding:6px;border-radius:14px;background:#2c2c2e;box-shadow:0 20px 50px rgba(0,0,0,.6);z-index:40}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;min-height:44px;font-size:15px}
+.opt:hover,.opt.active{background:rgba(255,255,255,.08)}
+.pills{display:flex;gap:8px;margin:12px 0 2px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.pills::-webkit-scrollbar{display:none}
+.pill{appearance:none;border:0;height:32px;padding:0 14px;border-radius:99px;background:var(--card);font-size:14px;font-weight:600;color:var(--label2);display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer;flex:none}
+.pill.on{background:var(--label);color:#000}
+.msg{margin-top:12px;padding:12px 14px;border-radius:14px;font-size:15px;background:var(--card)}
+.msg.error{background:var(--rs);color:#ffd0cc}
 .sugs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.sug{appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);border-radius:99px;padding:6px 12px;font:600 13px var(--mono);cursor:pointer}
-
-.card{margin-top:12px;padding:18px}
-.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.top .sym{font:800 21px var(--mono);letter-spacing:-.01em}
-.top .tf{font:600 12px var(--mono);color:var(--dim);margin-top:1px}
-.pxw{text-align:left}
-.top .px{font:750 21px var(--mono);direction:ltr}
-.pill{display:inline-block;margin-top:3px;padding:2px 9px;border-radius:99px;font:700 12.5px var(--mono);direction:ltr;background:rgba(255,255,255,.07);color:var(--muted)}
-.pill.up{background:var(--up-s);color:var(--up)}.pill.down{background:var(--down-s);color:var(--down)}
-.state{margin-top:14px;padding:14px 14px 12px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid var(--soft)}
-.state .row{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
-.headline{font-size:clamp(21px,5.6vw,26px);font-weight:800;line-height:1.3}
-.hsub{margin-top:4px;font-size:14px;color:#cfd3dc}
-.level{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:99px;font-size:13px;font-weight:750;white-space:nowrap}
-.level.calm{background:var(--up-s);color:var(--up)}.level.alert{background:var(--warn-s);color:var(--warn)}.level.danger{background:var(--down-s);color:var(--down)}
-.brief{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
-.brief li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
-.bi{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;background:rgba(255,255,255,.06)}
-.brief .lbl{font-size:11.5px;color:var(--dim);font-weight:700}
-.brief .txt{font-size:15px;font-weight:650;line-height:1.45}
-.brief .mean{font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:1px}
-.brief li.up .bi{background:var(--up-s)}.brief li.up .txt{color:#b9f7da}
-.brief li.down .bi{background:var(--down-s)}.brief li.down .txt{color:#ffc4d2}
-.brief li.warn .bi{background:var(--warn-s)}.brief li.warn .txt{color:#ffe0a8}
-.alertbox{margin-top:16px;padding:11px 13px;border-radius:14px;background:var(--warn-s);border:1px solid rgba(255,178,36,.28);font-size:13.5px;color:#ffe6bd;display:flex;flex-direction:column;gap:5px}
-.alertbox.danger{background:var(--down-s);border-color:rgba(255,61,110,.32);color:#ffd3de}
-.watch{margin-top:10px;padding:11px 13px;border-radius:14px;background:var(--info-s);border:1px solid rgba(90,200,250,.22);font-size:13.5px;color:#d6efff}
-.sitline{margin-top:10px;padding:11px 13px;border-radius:14px;border:1px solid var(--soft);background:rgba(255,255,255,.03);font-size:13.5px}
-.sitline b{font-size:14px}.sitline small{display:block;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.5}
-.sitline.down{border-color:rgba(255,61,110,.3)}.sitline.up{border-color:rgba(0,232,135,.28)}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.actions .btn{flex:1}
-.foot{margin-top:10px;font-size:11.5px;color:var(--dim)}
-.bh{font-size:12px;font-weight:750;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.trow{border-top:1px solid var(--soft)}
-.trow:first-of-type{border-top:0}
-.trow summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto 14px;gap:2px 10px;align-items:center;padding:11px 2px;cursor:pointer}
-.trow summary::-webkit-details-marker{display:none}
-.trow .nm{font-size:14px;font-weight:700}
-.trow .nm small{font:600 11px var(--mono);color:var(--dim);margin-right:6px}
-.trow .vl{grid-column:1/-1;font:600 12.5px var(--mono);direction:ltr;text-align:right;color:var(--muted)}
-.trow .st{font-size:12px;font-weight:750;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.06);color:#cfd3dc;white-space:nowrap}
-.trow .st.up{background:var(--up-s);color:var(--up)}.trow .st.down{background:var(--down-s);color:var(--down)}.trow .st.warn{background:var(--warn-s);color:var(--warn)}
-.trow .chev{color:var(--dim);font-size:11px;transition:transform .2s}
-.trow[open] .chev{transform:rotate(180deg)}
-.trow .say{font-size:13.5px;color:#cfd3dc;padding:0 2px 12px;line-height:1.6}
-.other{font-size:12.5px;color:var(--dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--soft)}
-.radar-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.rrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;padding:12px 4px;border-top:1px solid var(--soft);cursor:pointer}
-.rrow:first-child{border-top:0}
-.rrow .s{font:750 15px var(--mono)}
-.rrow .rp{text-align:left;font:600 13px var(--mono);direction:ltr}
-.rtags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px}
-.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:650;background:rgba(255,255,255,.05);color:var(--muted)}
-.tag.up{color:var(--up);background:var(--up-s)}.tag.down{color:var(--down);background:var(--down-s)}.tag.warn{color:var(--warn);background:var(--warn-s)}.tag.info{color:var(--info);background:var(--info-s)}
-.tests{display:flex;flex-direction:column;gap:2px;font-size:13px}
-.tests .tr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 2px;border-top:1px solid var(--soft)}
-.tests .tr:first-child{border-top:0}
-.tests .tr .v{font:600 12px var(--mono);direction:ltr;color:var(--muted);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
-.tests .sec{font-size:12px;font-weight:750;color:var(--dim);padding:12px 2px 4px}
-.ok{color:var(--up)}.bad{color:var(--down)}
-.progress{height:3px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}
-.progress i{display:block;height:100%;width:0;background:var(--info);transition:width .3s}
+.sug{appearance:none;border:0;background:var(--card2);color:var(--label);border-radius:99px;padding:6px 12px;font:600 14px var(--mono);cursor:pointer}
+/* coin header */
+.coin{margin-top:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.coin .sym{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:var(--label2)}
+.fav{appearance:none;border:0;background:none;font-size:20px;line-height:1;color:var(--label3);cursor:pointer;padding:2px}
+.fav.on{color:var(--yellow)}
+.px{font-size:clamp(32px,10vw,42px);font-weight:700;line-height:1.05;margin-top:2px}
+.upd{font-size:12px;color:var(--label3);margin-top:4px}
+.right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:3px;height:28px;padding:0 10px;border-radius:8px;font-size:15px;font-weight:700}
+.badge.up{background:var(--gs);color:var(--green)}.badge.down{background:var(--rs);color:var(--red)}
+.seg{display:flex;padding:2px;border-radius:9px;background:var(--card)}
+.seg button{appearance:none;border:0;background:none;font:600 13px var(--mono);padding:5px 12px;border-radius:7px;color:var(--label2);cursor:pointer}
+.seg button.on{background:#636366;color:#fff}
+/* cards */
+.card{background:var(--card);border-radius:22px;padding:16px;margin-top:14px;position:relative;overflow:hidden;cursor:pointer}
+.cap{font-size:13px;font-weight:600;color:var(--label2);display:flex;align-items:center;gap:6px}
+.q{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:rgba(235,235,245,.16);color:var(--label2);font:700 11px var(--font);font-style:normal;margin-inline-start:auto;flex:none}
+.statusc{display:flex;align-items:center;gap:16px}
+.statusc.t-down{background:linear-gradient(135deg,rgba(255,69,58,.22),rgba(255,69,58,.04) 55%),var(--card)}
+.statusc.t-up{background:linear-gradient(135deg,rgba(48,209,88,.2),rgba(48,209,88,.04) 55%),var(--card)}
+.statusc.t-flat{background:linear-gradient(135deg,rgba(255,159,10,.16),rgba(255,159,10,.03) 55%),var(--card)}
+.statusc h2{font-size:23px;font-weight:800;line-height:1.22;margin:4px 0 0}
+.statusc p{font-size:15px;color:var(--label2);margin:4px 0 0}
+.statusc .txt{flex:1;min-width:0}
+.ring{width:76px;height:76px;flex:none}
+.warns{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.wrow{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer}
+.wrow.danger{background:var(--rs);color:#ff8a80}.wrow.warn{background:var(--os);color:#ffc46b}
+.wrow .q{background:rgba(255,255,255,.14);color:inherit}
+.chart{width:100%;height:112px;display:block;margin-top:10px;overflow:visible}
+.watch{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--label2)}
+.watch b{color:var(--orange);font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.tile{background:var(--card);border-radius:22px;padding:14px;min-height:152px;display:flex;flex-direction:column;justify-content:space-between;gap:6px;cursor:pointer}
+.tile.wide{grid-column:1/-1;min-height:0}
+.tile .v{font-size:30px;font-weight:700;line-height:1}
+.tile .s{font-size:14px;color:var(--label2);font-weight:500}
+.split{display:flex;height:10px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.08);margin:8px 0 6px}
+.split i{display:block;height:100%;width:var(--w)}
+.whale{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600}
+.hist .row{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:var(--label2)}
+.hist .row span:first-child{width:72px}
+.hist .tr{flex:1;height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.hist .tr i{display:block;height:100%;border-radius:99px;width:var(--w)}
+.hist .h2{font-size:17px;font-weight:700;margin-top:4px}
+.more{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:14px 16px;border-radius:16px;background:var(--card);font-size:16px;color:var(--blue);font-weight:600;cursor:pointer;width:100%;appearance:none;border:0;text-align:right}
+.links{display:flex;justify-content:center;gap:18px;margin-top:16px;font-size:13px}
+.links button{appearance:none;border:0;background:none;color:var(--blue);cursor:pointer}
+.foot{margin-top:14px;text-align:center;font-size:11.5px;color:var(--label3);line-height:1.6}
 .skeleton{color:transparent !important;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:8px}
 @keyframes sh{to{background-position:-200% 0}}
-footer{margin-top:18px;text-align:center;font-size:11.5px;color:var(--dim);line-height:1.7}
-@media (max-width:560px){ .card{padding:16px} }
-@media (max-width:360px){ .brand small{display:none} .top .sym,.top .px{font-size:18px} }
-@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+/* motion: plays when the card enters the screen */
+.a .grow{width:0 !important;transition:width 1.1s var(--ease) .15s}
+.a.in .grow{width:var(--w) !important}
+.a .fillr{stroke-dashoffset:var(--c);transition:stroke-dashoffset 1.3s var(--ease) .2s}
+.a.in .fillr{stroke-dashoffset:var(--o)}
+.a .needle{transform:rotate(-80deg);transform-origin:60px 56px;transition:transform 1.3s var(--ease) .2s}
+.a.in .needle{transform:rotate(var(--deg))}
+.a .drawl{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);transition:stroke-dashoffset 1.6s var(--ease) .1s}
+.a.in .drawl{stroke-dashoffset:0}
+.a .fadein{opacity:0;transition:opacity .8s ease 1.1s}
+.a.in .fadein{opacity:1}
+.a .bar{transform:scaleY(0);transform-origin:bottom;transition:transform .9s var(--ease)}
+.a.in .bar{transform:scaleY(1)}
+.bob{animation:bob 1.5s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.bobd{animation:bobd 1.5s ease-in-out infinite}
+@keyframes bobd{50%{transform:translateY(6px)}}
+.pulse{animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+/* radar & favourites lists */
+.list{display:flex;flex-direction:column;background:var(--card);border-radius:18px;overflow:hidden;margin-top:12px}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:13px 16px;border-top:.5px solid var(--sep);cursor:pointer}
+.lrow:first-child{border-top:0}
+.lrow .s{font:700 16px var(--mono)}
+.lrow .rp{font:600 14px var(--mono);direction:ltr;text-align:left}
+.tags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:7px;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.08);color:var(--label2)}
+.tag.up{background:var(--gs);color:var(--green)}.tag.down{background:var(--rs);color:var(--red)}.tag.warn{background:var(--os);color:var(--orange)}.tag.info{background:var(--bs);color:var(--teal)}
+.btnp{appearance:none;border:0;height:44px;padding:0 18px;border-radius:12px;background:var(--blue);color:#fff;font:600 16px var(--font);cursor:pointer}
+.btnp:disabled{opacity:.5}
+.btng{appearance:none;border:0;height:40px;padding:0 14px;border-radius:10px;background:var(--card2);color:var(--label);font:600 14px var(--font);cursor:pointer}
+.progress{height:3px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:12px}
+.progress i{display:block;height:100%;width:0;background:var(--blue);transition:width .3s}
+.hint{font-size:13px;color:var(--label3)}
+.empty{padding:18px 16px;color:var(--label3);font-size:14px}
+/* self-test */
+.tests{display:flex;flex-direction:column;font-size:14px}
+.tests .tr{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 2px;border-top:.5px solid var(--sep)}
+.tests .tr .v{font:600 12px var(--mono);direction:ltr;color:var(--label2);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50vw}
+.tests .sec{font-size:13px;font-weight:700;color:var(--label3);padding:14px 2px 4px}
+.ok{color:var(--green)}.bad{color:var(--red)}
+.field input{width:100%;height:44px;padding:0 12px;border-radius:12px;background:var(--card);border:0;color:var(--label);font:600 17px var(--mono);outline:0;direction:ltr;text-align:right}
+.row2{display:flex;gap:8px;margin-top:12px}.row2 .field{flex:1}
+/* tab bar */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:10;height:calc(56px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(22,22,24,.82);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border-top:.5px solid var(--sep);display:flex;justify-content:space-around;align-items:center}
+.tabbar button{appearance:none;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--gray);cursor:pointer;min-width:72px;padding-top:6px}
+.tabbar button.on{color:var(--blue)}
+.tabbar svg{width:26px;height:26px}
+/* bottom sheet */
+#sheet .dimbg{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .3s}
+#sheet .panel{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:600px;margin:0 auto;max-height:82vh;overflow-y:auto;background:#1c1c1e;border-radius:20px 20px 0 0;padding:10px 20px calc(28px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .42s var(--ease)}
+#sheet.show .dimbg{opacity:1;pointer-events:auto}
+#sheet.show .panel{transform:none}
+.grab{width:36px;height:5px;border-radius:3px;background:#48484a;margin:0 auto 14px}
+.shh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.shh h3{font-size:21px;font-weight:800;margin:0}
+.shx{appearance:none;border:0;width:30px;height:30px;border-radius:50%;background:var(--card2);color:var(--label2);font-size:15px;cursor:pointer}
+.shs{margin-top:16px}
+.shs h4{margin:0 0 4px;font-size:13px;font-weight:700;color:var(--label3)}
+.shs p{margin:0;font-size:16px;line-height:1.55;color:#e5e5ea}
+.shs .now{padding:12px 14px;border-radius:14px;background:var(--card2)}
+.trow{border-top:.5px solid var(--sep);padding:12px 0}
+.trow:first-of-type{border-top:0}
+.trow .h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.trow .nm{font-weight:700;font-size:15px}
+.trow .nm small{font:600 11px var(--mono);color:var(--label3);margin-inline-start:6px}
+.trow .st{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.08);white-space:nowrap}
+.trow .st.up{background:var(--gs);color:var(--green)}.trow .st.down{background:var(--rs);color:var(--red)}.trow .st.warn{background:var(--os);color:var(--orange)}
+.trow .vl{font:600 12.5px var(--mono);direction:ltr;text-align:right;color:var(--label3);margin-top:3px}
+.trow .say{font-size:14px;color:var(--label2);margin-top:4px;line-height:1.5}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="#5ac8fa" stroke-width="2.4"/><path d="M15.5 15.5l5 5" stroke="#5ac8fa" stroke-width="2.4" stroke-linecap="round"/></svg></div>
-      <div><h1>قارئ أدوات باينانس</h1><small>يقرأ الأدوات ويشرحها — ليس توصية شراء أو بيع</small></div>
+
+<!-- ============ ANALYSE ============ -->
+<section id="paneCoin" class="pane">
+  <div class="lt-row"><h1 class="lt">تحليل</h1><span class="status" aria-live="polite"><span class="dot" id="dot"></span><span id="statusText">جاهز</span></span></div>
+  <div class="searchwrap">
+    <div class="search">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="#8e8e93" stroke-width="2.4"/><path d="M15.5 15.5L20 20" stroke="#8e8e93" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <input id="symInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="الصق اسم العملة من باينانس" aria-label="اسم العملة">
+      <button class="p" id="pasteBtn">لصق</button>
     </div>
-    <div class="status" aria-live="polite"><span class="dot" id="dot"></span><span id="statusText">جاهز</span></div>
-  </header>
+    <div class="dropdown hidden" id="symList" role="listbox"></div>
+  </div>
+  <div class="pills" id="pills"></div>
+  <div id="msg" class="msg hidden" role="alert"></div>
 
-  <nav class="tabs" role="tablist">
-    <button class="tab active" id="tabCoin" role="tab" aria-selected="true">تحليل عملة</button>
-    <button class="tab" id="tabRadar" role="tab" aria-selected="false">الرادار</button>
-  </nav>
-
-  <!-- ============ COIN TAB ============ -->
-  <section id="paneCoin">
-    <div class="box glass">
-      <div class="inrow">
-        <div class="field">
-          <input id="symInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="الصق اسم العقد… مثل CYSUSDT" aria-label="اسم العقد">
-          <div class="dropdown hidden" id="symList" role="listbox"></div>
-        </div>
-        <button class="btn ghost" id="pasteBtn">لصق</button>
-        <button class="btn primary" id="goBtn">اقرأ</button>
+  <div id="result" class="hidden">
+    <div class="coin">
+      <div>
+        <div class="sym"><span id="rSym">—</span><button class="fav" id="favBtn" aria-label="أضف للمفضلة">☆</button></div>
+        <div class="px n" id="rPx">—</div>
+        <div class="upd" id="rUpd"></div>
       </div>
-      <div class="sub-row">
-        <div class="chips" role="tablist" aria-label="فريم الشارت">
-          <button class="chip" data-tf="5m">5m</button><button class="chip active" data-tf="15m">15m</button><button class="chip" data-tf="1h">1h</button>
-        </div>
-        <span class="hint">فريم الشارت لقراءة EMA وRSI والحجم</span>
+      <div class="right">
+        <span class="badge n" id="rChg"></span>
+        <div class="seg" id="tfSeg"><button data-tf="1h">1h</button><button data-tf="15m">15m</button><button data-tf="5m">5m</button></div>
       </div>
-      <div id="msg" class="msg hidden" role="alert"></div>
     </div>
 
-    <section class="card glass hidden" id="result" aria-live="polite">
-      <div class="top">
-        <div><div class="sym" id="rSym">—</div><div class="tf" id="rTf"></div></div>
-        <div class="pxw"><div class="px" id="rPx">—</div><span class="pill" id="rChg"></span></div>
-      </div>
-      <div class="state">
-        <div class="row"><div class="headline" id="rHead">—</div><span id="rLevel"></span></div>
-        <div class="hsub" id="rSub"></div>
-      </div>
-      <ul class="brief" id="rBrief"></ul>
-      <div id="rAlerts"></div>
-      <div class="watch hidden" id="rWatch"></div>
-      <div id="rSits"></div>
-      <div class="actions">
-        <button class="btn ghost sm" id="detailsBtn" aria-expanded="false">تفاصيل الأدوات ▾</button>
-        <button class="btn ghost sm" id="refreshBtn">تحديث</button>
-        <button class="btn ghost sm" id="copyBtn">نسخ</button>
-      </div>
-      <div class="foot" id="rFoot"></div>
-    </section>
-    <section class="card glass hidden" id="details" aria-label="تفاصيل الأدوات">
-      <div class="bh"><span>كل أداة من أدوات باينانس — اضغط أي سطر عشان تفهمها</span><span id="rAge"></span></div>
-      <div id="rTools"></div>
-      <div class="other hidden" id="rOther"></div>
-    </section>
-  </section>
-
-  <!-- ============ RADAR TAB ============ -->
-  <section id="paneRadar" class="hidden">
-    <div class="box glass">
-      <div class="sub-row" style="margin-top:0">
-        <div><b>رادار النشاط غير الطبيعي</b><div class="hint">يفحص كل عقود USDT الدائمة ويرتبها حسب غرابة النشاط — ليس حسب "أفضل عملة للشراء".</div></div>
-        <button class="btn primary sm" id="scanBtn">افحص الآن</button>
-      </div>
-      <div class="progress"><i id="scanBar"></i></div>
-      <div class="hint" id="scanInfo" style="margin-top:8px"></div>
+    <div class="card statusc a" id="cStatus" data-info="status">
+      <svg class="ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="9"/><circle id="ringFill" class="fillr" cx="40" cy="40" r="34" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="214" transform="rotate(-90 40 40)"/><text id="ringTxt" x="40" y="46" text-anchor="middle" font-size="15" font-weight="800" font-family="-apple-system,system-ui"></text></svg>
+      <div class="txt"><div class="cap">الخلاصة <i class="q">?</i></div><h2 id="rHead">—</h2><p id="rSub"></p></div>
     </div>
-    <div class="card glass" id="radarCard"><ul class="radar-list" id="radarList"><li class="hint" style="padding:8px 4px">اضغط «افحص الآن».</li></ul></div>
-  </section>
+    <div class="warns" id="rWarn"></div>
 
-  <!-- ============ SELF-TEST ============ -->
-  <section id="paneTest" class="hidden">
-    <div class="box glass">
-      <div class="sub-row" style="margin-top:0">
-        <div><b>🔧 فحص البيانات</b><div class="hint">يتأكد إن كل مصادر باينانس شغالة من جهازك، ويعرض الأرقام الخام عشان نقارنها بالأرشيف الرسمي.</div></div>
-        <button class="btn ghost sm" id="testBack">رجوع</button>
-      </div>
-      <div class="inrow" style="margin-top:10px">
-        <div class="field"><input id="testSym" type="text" value="BTCUSDT" autocapitalize="characters" spellcheck="false" aria-label="عملة الفحص"></div>
-        <button class="btn primary" id="testRun">ابدأ الفحص</button>
-      </div>
-      <div class="progress"><i id="testBar"></i></div>
+    <div class="card a" id="cChart" data-info="chart">
+      <div class="cap">السعر · <span id="chartSpan"></span><i class="q">?</i></div>
+      <svg class="chart" id="chartSvg" viewBox="0 0 360 112" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="watch" id="rWatch"></div>
     </div>
-    <div class="card glass hidden" id="testCard">
-      <div class="bh"><span id="testSummary"></span><button class="btn ghost sm" id="testCopy" style="flex:0">نسخ التقرير</button></div>
-      <div id="testOut" class="tests"></div>
-      <div class="foot">انسخ التقرير وأرسله في المحادثة — نقارن كل رقم بأرشيف باينانس لنفس الدقيقة.</div>
-    </div>
-  </section>
 
-  <footer><a href="#" id="testLink" style="color:var(--info)">🔧 فحص البيانات</a><br>البيانات من واجهة Binance USDⓈ-M العامة (<span class="n">fapi.binance.com</span>) بدون مفاتيح. هذه قراءة للبيانات وليست توصية؛ اختباراتنا لم تجد أفضلية مضمونة بعد العمولة.</footer>
+    <div class="grid">
+      <div class="tile a" id="tCrowd" data-info="crowd"></div>
+      <div class="tile a" id="tMoney" data-info="money"></div>
+      <div class="tile a" id="tFund" data-info="fund"></div>
+      <div class="tile a" id="tSpeed" data-info="speed"></div>
+      <div class="tile wide a" id="tVol" data-info="vol"></div>
+    </div>
+
+    <div class="card hist a hidden" id="cHist" data-info="hist"></div>
+
+    <button class="more" id="allBtn"><span>كل أدوات باينانس</span><span class="dim">‹</span></button>
+    <div class="links"><button id="refreshBtn">↻ تحديث</button><button id="copyBtn">نسخ القراءة</button></div>
+    <div class="foot" id="rFoot"></div>
+  </div>
+</section>
+
+<!-- ============ RADAR ============ -->
+<section id="paneRadar" class="pane hidden">
+  <div class="lt-row"><h1 class="lt">الرادار</h1><button class="btnp" id="scanBtn">افحص</button></div>
+  <div class="hint">العملات اللي فيها نشاط غير عادي الآن — مو ترتيب لأفضل عملة للشراء.</div>
+  <div class="progress"><i id="scanBar"></i></div>
+  <div class="hint" id="scanInfo" style="margin-top:8px"></div>
+  <div class="list" id="radarList"><div class="empty">اضغط «افحص».</div></div>
+</section>
+
+<!-- ============ FAVOURITES ============ -->
+<section id="paneFav" class="pane hidden">
+  <div class="lt-row"><h1 class="lt">المفضلة</h1></div>
+  <div class="list" id="favList"></div>
+  <div class="hint" style="margin-top:22px">آخر العملات</div>
+  <div class="list" id="recentList"></div>
+  <div class="links" style="margin-top:28px"><button id="testLink">🔧 فحص البيانات</button></div>
+  <div class="foot">البيانات من واجهة Binance USDⓈ-M العامة بدون مفاتيح. قراءة للبيانات وليست توصية — اختباراتنا ما لقت أفضلية مضمونة بعد العمولة.</div>
+</section>
+
+<!-- ============ SELF-TEST ============ -->
+<section id="paneTest" class="pane hidden">
+  <div class="lt-row"><h1 class="lt">فحص البيانات</h1><button class="btng" id="testBack">رجوع</button></div>
+  <div class="hint">يتأكد إن كل مصادر باينانس شغالة من جهازك، ويعرض الأرقام الخام عشان نقارنها بالأرشيف الرسمي.</div>
+  <div class="row2"><div class="field"><input id="testSym" type="text" value="BTCUSDT" autocapitalize="characters" spellcheck="false" aria-label="عملة الفحص"></div><button class="btnp" id="testRun">ابدأ الفحص</button></div>
+  <div class="progress"><i id="testBar"></i></div>
+  <div class="card hidden" id="testCard" style="cursor:default">
+    <div class="cap" style="justify-content:space-between"><span id="testSummary"></span><button class="btng" id="testCopy">نسخ التقرير</button></div>
+    <div id="testOut" class="tests"></div>
+    <div class="foot">انسخ التقرير وأرسله في المحادثة — نقارن كل رقم بأرشيف باينانس لنفس الدقيقة.</div>
+  </div>
+</section>
+
+<nav class="tabbar" id="tabbar">
+  <button class="on" id="tabCoin"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>تحليل</button>
+  <button id="tabRadar"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.8 7.8a6 6 0 000 8.4M16.2 7.8a6 6 0 010 8.4M4.9 4.9a10 10 0 000 14.2M19.1 4.9a10 10 0 010 14.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>الرادار</button>
+  <button id="tabFav"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>المفضلة</button>
+</nav>
+
+<div id="sheet" aria-hidden="true">
+  <div class="dimbg" id="sheetDim"></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <div class="grab"></div>
+    <div class="shh"><h3 id="shTitle"></h3><button class="shx" id="shClose" aria-label="إغلاق">✕</button></div>
+    <div id="shBody"></div>
+  </div>
 </div>
 
 <script>
@@ -509,17 +552,17 @@ function readout(D) {
   else if (volSt !== 'عادي') out.brief.push({ ic: '📊', lbl: 'حجم التداول', tone: spikeIdx >= 0 ? 'warn' : '', txt: volSt,
     mean: spikeIdx === L || (spikeIdx >= 0 && volSt === 'تداول ضخم قبل قليل') ? 'غالباً فيه خبر أو حركة قوية — الحركات بعدها تكون عنيفة.' : volSt === 'كان ضخم والحين هدأ' ? 'الاندفاع خلص — السعر ممكن يتذبذب أو يرجع.' : volSt === 'أعلى من العادة' ? 'فيه اهتمام بالعملة أكثر من العادة.' : 'الحركات وقت التداول الضعيف أقل موثوقية.' });
 
-  // ---- Warnings (plain, most severe first) ----
-  const W = (lvl, t) => out.warns.push({ lvl, t });
+  // ---- Warnings: short title + full explanation ----
+  const W = (lvl, s, t) => out.warns.push({ lvl, s, t });
   const vol24 = X.vol24 || D.vol24;
-  if (vol24 < 10e6) W('danger', `العملة قليلة التداول (${N('$' + compact(vol24))} في اليوم) — سهل أحد يحرك سعرها، وممكن تدخل بسعر وتطلع بسعر أسوأ.`);
-  if (isNum(X.OI) && X.OI * c < 5e6) W('danger', `الفلوس المفتوحة على العملة قليلة (${N('$' + compact(X.OI * c))}) — شخص واحد كبير يقدر يحرك السعر.`);
-  if (isNum(D.spreadPct) && D.spreadPct > 0.1) W('danger', `الفرق بين سعر الشراء والبيع كبير (${N(D.spreadPct.toFixed(2) + '%')}) — تخسر من أول ما تدخل.`);
-  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `العملة تحركت ${N(pct(X.P4h, 1))} في 4 ساعات — الدخول بعد حركة كبيرة خطر لأنها ممكن ترجع.`);
-  if (vol24 >= 10e6 && vol24 < 30e6) W('warn', `التداول على العملة متوسط (${N('$' + compact(vol24))} في اليوم) — استخدم مبلغ أصغر.`);
-  if (D.onboard && serverNow() - D.onboard < 30 * 864e5) W('warn', `العملة جديدة في باينانس (عمرها ${Math.max(1, Math.round((serverNow() - D.onboard) / 864e5))} يوم) — حركتها صعب تتوقعها.`);
-  if (isNum(D.markLastGap) && Math.abs(D.markLastGap) > 0.005) W('warn', `فيه فرق بين السعر اللي تنحسب عليه التصفية وآخر سعر (${N(pct(D.markLastGap, 2))}) — احذر التصفية.`);
-  if (isNum(X.metricsAge) && X.metricsAge > 20 * 60000) W('warn', `بعض البيانات متأخرة ${Math.round(X.metricsAge / 60000)} دقيقة.`);
+  if (vol24 < 10e6) W('danger', 'تداول ضعيف جداً', `العملة قليلة التداول (${N('$' + compact(vol24))} في اليوم). سهل أحد يحرك سعرها، وممكن تدخل بسعر وتطلع بسعر أسوأ.`);
+  if (isNum(X.OI) && X.OI * c < 5e6) W('danger', 'فلوس قليلة على العملة', `مجموع الصفقات المفتوحة ${N('$' + compact(X.OI * c))} بس. شخص واحد كبير يقدر يحرك السعر.`);
+  if (isNum(D.spreadPct) && D.spreadPct > 0.1) W('danger', 'فرق سعر كبير', `الفرق بين سعر الشراء والبيع ${N(D.spreadPct.toFixed(2) + '%')} — تخسر هذا الفرق من أول ما تدخل.`);
+  if (isNum(X.P4h) && Math.abs(X.P4h) >= 0.10) W('warn', `تحركت ${pct(X.P4h, 1)} في 4 ساعات`, 'الدخول بعد حركة كبيرة خطر، لأن جزء منها غالباً يرجع.');
+  if (vol24 >= 10e6 && vol24 < 30e6) W('warn', 'تداول متوسط', `التداول ${N('$' + compact(vol24))} في اليوم — الأفضل تستخدم مبلغ أصغر.`);
+  if (D.onboard && serverNow() - D.onboard < 30 * 864e5) W('warn', 'عملة جديدة', `أدرجت في باينانس قبل ${Math.max(1, Math.round((serverNow() - D.onboard) / 864e5))} يوم — حركتها صعب تتوقعها وبياناتها قليلة.`);
+  if (isNum(D.markLastGap) && Math.abs(D.markLastGap) > 0.005) W('warn', 'فرق في سعر التصفية', `سعر العلامة (اللي تنحسب عليه التصفية) بعيد عن آخر سعر بـ ${N(pct(D.markLastGap, 2))} — احذر تصفية مفاجئة.`);
+  if (isNum(X.metricsAge) && X.metricsAge > 20 * 60000) W('warn', 'بيانات متأخرة', `بيانات المراكز متأخرة ${Math.round(X.metricsAge / 60000)} دقيقة من باينانس.`);
 
   // ---- Watch (one plain line) ----
   const hi = Math.max(...ch.h.slice(-50)), lo = Math.min(...ch.l.slice(-50));
@@ -533,6 +576,11 @@ function readout(D) {
   else if (stackUp) { out.head = c < E25 ? 'كان صاعد، والحين بدأ يضعف' : 'السعر في صعود'; out.sub = trendMean; }
   else if (stackDn) { out.head = c > E25 ? 'كان نازل، والنزول بدأ يهدى' : 'السعر في نزول'; out.sub = trendMean; }
   else { out.head = 'السعر بدون اتجاه واضح'; out.sub = 'يطلع وينزل بدون اتجاه — الحركات فيه غالباً مضللة.'; }
+  out.subShort = out.sits.length ? (SIT[out.sits[0]].dir > 0 ? 'ميل إيجابي بسيط' : SIT[out.sits[0]].dir < 0 ? 'ميل سلبي بسيط' : 'الحركة هدأت')
+    : (isNum(X.P1h) && Math.abs(X.P1h) >= 0.03 && X.VS1h >= 2) ? 'حركة قوية وعنيفة'
+    : stackUp ? (c < E25 ? 'انتبه لتغيّر الاتجاه' : 'المشترين مسيطرين') : stackDn ? (c > E25 ? 'ممكن بداية ارتداد' : 'البائعين مسيطرين') : 'السوق متردد';
+  out.v = { tf, span, E25, e25s: e25, hi, lo, R6, R12, R24, spd, vRatio, volSt, spikeIdx, f8, fr, hours, fSt, longPct, crowdLong, crowdShort, glsMean,
+    bigSt, div, rg1, rg4, tkR, tkSt, stackUp, stackDn, trend, trendMean, stretched, dist25, m10 };
   out.c = c; out.f8 = f8;
   return out;
 }
@@ -549,7 +597,7 @@ async function analyze(raw, { silent = false } = {}) {
   if (state.ctrl) state.ctrl.abort(); const ctrl = new AbortController(); state.ctrl = ctrl; const seq = ++state.seq;
   state.busy = true; setStatus('loading', 'جاري القراءة…');
   if (!silent || !state.last || state.last.sym !== sym) showLoading(sym, tf);
-  if (!state.last || state.last.sym !== sym) { $('details').classList.add('hidden'); $('detailsBtn').textContent = 'تفاصيل الأدوات ▾'; }
+  addRecent(sym);
   const q = 'symbol=' + encodeURIComponent(sym), s = ctrl.signal, pd = 'period=5m&limit=289';
   const reqs = {
     chart: api(`/fapi/v1/klines?${q}&interval=${tf}&limit=499`, s),
@@ -572,7 +620,7 @@ async function analyze(raw, { silent = false } = {}) {
   state.busy = false;
   keys.forEach((k, i) => { if (settled[i].status === 'fulfilled') res[k] = settled[i].value; else errs[k] = settled[i].reason; });
   const fatal = errs.chart || errs.premium || (tf !== '5m' && errs.k5) || (tf !== '15m' && errs.k15);
-  if (fatal) { if (fatal.kind === 'abort') return; setStatus('error', 'خطأ'); showMsg(explain(fatal), 'error'); if (!state.last || state.last.sym !== sym) { $('result').classList.add('hidden'); $('details').classList.add('hidden'); } return; }
+  if (fatal) { if (fatal.kind === 'abort') return; setStatus('error', 'خطأ'); showMsg(explain(fatal), 'error'); if (!state.last || state.last.sym !== sym) $('result').classList.add('hidden'); return; }
   try {
     const pr = res.premium;
     if (isNum(+pr.time) && +pr.time > 0) state.clockOffset = +pr.time - Date.now();
@@ -594,50 +642,6 @@ async function analyze(raw, { silent = false } = {}) {
     render(state.last);
     setStatus('live', 'مباشر');
   } catch (e) { console.error(e); setStatus('error', 'خطأ'); showMsg('حدث خطأ أثناء القراءة: ' + esc(e.message || e), 'error'); }
-}
-
-/* ===================== RENDER ===================== */
-const setStatus = (k, t) => { $('dot').className = 'dot ' + k; $('statusText').textContent = t; };
-function showMsg(html, kind = '') { const m = $('msg'); m.className = 'msg' + (kind ? ' ' + kind : ''); m.innerHTML = html; }
-const hideMsg = () => { $('msg').className = 'msg hidden'; };
-function showLoading(sym, tf) {
-  $('result').classList.remove('hidden'); $('rSym').textContent = sym; $('rTf').textContent = 'فريم ' + tf; $('rPx').textContent = '—'; $('rChg').textContent = ''; $('rChg').className = 'pill';
-  $('rHead').innerHTML = '<span class="skeleton">جاري قراءة الأدوات…</span>'; $('rSub').innerHTML = '';
-  for (const id of ['rLevel', 'rBrief', 'rAlerts', 'rSits', 'rTools', 'rOther']) $(id).innerHTML = '';
-  $('rWatch').classList.add('hidden');
-}
-function sitLine(id, i) {
-  const s = SIT[id], st = SIT_STATS[id], m60 = st.m60 * 100, diff = st.up - SIT_BASE_UP;
-  const lean = Math.abs(diff) < 1 ? 'تقريباً نفس العادي' : diff > 0 ? 'ميل بسيط للصعود' : 'ميل بسيط للنزول';
-  return `<div class="sitline ${s.dir > 0 ? 'up' : s.dir < 0 ? 'down' : ''}"><b>✓ ${i === 0 ? 'وش صار بعد هذا الموقف في الماضي؟' : s.name}</b><small>اختبرناه على سنة كاملة: صار ${N(st.n.toLocaleString('en-US'))} مرة على ${N(st.coins)} عملة. بعدها بساعة، السعر صعد في ${N(st.up.toFixed(0) + '%')} من المرات (العادي ${N(SIT_BASE_UP.toFixed(0) + '%')}) — يعني ${lean}، ومتوسط الحركة ${N(pctRaw(m60, 2))} بس. معلومة مساعدة، مو ضمان.</small></div>`;
-}
-function render(L) {
-  const { D, R } = L;
-  $('result').classList.remove('hidden');
-  $('rSym').textContent = L.sym; $('rTf').textContent = 'فريم ' + L.tf;
-  $('rPx').textContent = fmtP(R.c);
-  const ch = $('rChg'); ch.textContent = isNum(D.chg24) ? pctRaw(D.chg24) + ' 24h' : ''; ch.className = 'pill ' + (D.chg24 >= 0 ? 'up' : 'down');
-  $('rHead').textContent = R.head; $('rSub').innerHTML = R.sub;
-  $('rLevel').innerHTML = `<span class="level ${R.level[0]}" title="${R.level[2]}">${R.level[0] === 'calm' ? '●' : '▲'} الحذر: ${R.level[1]}</span>`;
-  $('rSub').innerHTML = R.sub + `<div class="dim" style="font-size:12.5px;margin-top:4px">مستوى الحذر «${R.level[1]}»: ${R.level[2]}.</div>`;
-  $('rBrief').innerHTML = R.brief.map(b => `<li class="${b.tone}"><span class="bi">${b.ic}</span><div><div class="lbl">${b.lbl}</div><div class="txt">${b.txt}</div>${b.mean ? `<div class="mean">${b.mean}</div>` : ''}</div></li>`).join('');
-  const w = R.warns.slice(0, 2);
-  $('rAlerts').innerHTML = w.length ? `<div class="alertbox ${w.some(x => x.lvl === 'danger') ? 'danger' : ''}">${w.map(x => `<div>⚠ ${x.t}</div>`).join('')}${R.warns.length > 2 ? `<div class="dim">+${R.warns.length - 2} تحذير آخر في التفاصيل</div>` : ''}</div>` : '';
-  $('rWatch').innerHTML = '👁 <b>وش تراقب:</b> ' + R.watch; $('rWatch').classList.remove('hidden');
-  $('rSits').innerHTML = R.sits.map((id, i) => sitLine(id, i)).join('');
-  $('rTools').innerHTML = R.tools.map(t => `<details class="trow"><summary><span class="nm">${t.k}<small>${t.sub}</small></span><span class="st ${t.tone}">${t.st}</span><span class="chev">▾</span><span class="vl">${t.val}</span></summary><div class="say">${t.say}</div></details>`).join('')
-    + (R.warns.length > 2 ? `<div class="other">كل التحذيرات: ${R.warns.map(x => x.t).join(' · ')}</div>` : '');
-  const oth = $('rOther'); oth.classList.toggle('hidden', !R.other.length);
-  oth.innerHTML = R.other.length ? `ظهرت كمان: ${R.other.map(s => SIT[s].name).join('، ')} — بس هذي <b>ما ثبتت</b> لما اختبرناها على الماضي، فلا تعتمد عليها.` : '';
-  const age = D.x && isNum(D.x.metricsAge) ? Math.round(D.x.metricsAge / 60000) : null;
-  $('rAge').innerHTML = age !== null ? `<span class="dim">عمر بيانات المراكز ${N(age + 'د')}</span>` : '';
-  $('rFoot').innerHTML = `تحديث ${N(new Date(L.at - state.clockOffset).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))} · قراءة للبيانات وليست توصية.`;
-}
-function copyText() {
-  const L = state.last; if (!L) return '';
-  const strip = h => String(h).replace(/<[^>]+>/g, '');
-  return [`${L.sym} (${L.tf}) — ${L.R.head} · الحذر: ${L.R.level[1]}`, strip(L.R.sub), ...L.R.brief.map(b => `• ${b.lbl}: ${strip(b.txt)}`),
-    ...L.R.warns.map(w => '⚠ ' + strip(w.t)), '👁 ' + strip(L.R.watch), ...L.R.sits.map(s => '✓ ' + SIT[s].name), 'قراءة للبيانات وليست توصية.'].join('\n');
 }
 
 /* ===================== RADAR ===================== */
@@ -685,23 +689,6 @@ async function scan() {
   } catch (e) { info.innerHTML = explain(e); bar.style.width = '0%'; }
   state.scanning = false; $('scanBtn').disabled = false;
 }
-function renderRadar() {
-  const R = state.radar; if (!R) return;
-  $('radarList').innerHTML = R.list.map(r => {
-    const tags = [];
-    if (r.qv < 10e6) tags.push([9, '<span class="tag down">سيولة ضعيفة</span>']);
-    if (isNum(r.oiUsd) && r.oiUsd < 5e6) tags.push([8, '<span class="tag down">OI صغير</span>']);
-    if (isNum(r.VS1h) && r.VS1h >= 2) tags.push([r.VS1h, `<span class="tag info">حجم ${N(r.VS1h.toFixed(1) + '×')}</span>`]);
-    if (isNum(r.P1h) && Math.abs(r.P1h) >= 0.02) tags.push([Math.abs(r.P1h) * 100, `<span class="tag ${r.P1h > 0 ? 'up' : 'down'}">ساعة ${N(pct(r.P1h, 1))}</span>`]);
-    if (isNum(r.OI1h) && Math.abs(r.OI1h) >= 0.03) tags.push([Math.abs(r.OI1h) * 60, `<span class="tag ${r.OI1h > 0 ? 'info' : 'warn'}">OI ${N(pct(r.OI1h, 1))}</span>`]);
-    if (Math.abs(r.f8) >= 0.0005) tags.push([Math.abs(r.f8) * 1e4, `<span class="tag warn">تمويل ${N(pct(r.f8, 3))}</span>`]);
-    if (r.h < 8) tags.push([4, `<span class="tag warn">تمويل كل ${r.h}س</span>`]);
-    if (r.GLS >= 3) tags.push([3, '<span class="tag warn">الجمهور لونج بقوة</span>']); else if (r.GLS <= 0.6) tags.push([3, '<span class="tag warn">الجمهور شورت بقوة</span>']);
-    tags.sort((a, b) => b[0] - a[0]);
-    return `<li class="rrow" data-sym="${esc(r.s)}"><span class="s">${esc(r.s)}</span><span class="rp">${fmtP(r.px, r.s)} <span class="${r.chg >= 0 ? 'up' : 'down'}">${pctRaw(r.chg, 1)}</span></span><div class="rtags">${tags.slice(0, 3).map(t => t[1]).join('') || '<span class="tag">نشاط عادي</span>'}</div></li>`;
-  }).join('') || '<li class="hint" style="padding:8px 4px">ما فيه نشاط غير طبيعي الآن.</li>';
-}
-
 /* ===================== SELF-TEST ===================== */
 async function selfTest() {
   const sym = (cleanInput($('testSym').value) || 'BTCUSDT').replace(/^(?!.*USD[TC]$)(.*)$/, '$1USDT');
@@ -772,15 +759,7 @@ async function selfTest() {
   state.testReport = rep.join('\n');
   $('testRun').disabled = false;
 }
-function openTest(open) {
-  $('paneTest').classList.toggle('hidden', !open);
-  $('paneCoin').classList.toggle('hidden', open || !$('tabCoin').classList.contains('active'));
-  $('paneRadar').classList.toggle('hidden', open || !$('tabRadar').classList.contains('active'));
-  document.querySelector('.tabs').classList.toggle('hidden', open);
-  if (open) { if (state.symbol) $('testSym').value = state.symbol; window.scrollTo({ top: 0 }); }
-}
-
-/* ===================== UI / EVENTS ===================== */
+/* ===================== DROPDOWN ===================== */
 function openDD() {
   const q = cleanInput($('symInput').value).replace(/(USDT|USDC)$/, ''); if (!state.universeOK || !q) { closeDD(); return; }
   const it = []; for (const m of state.universe.values()) { const b = m.base.replace(/^1000000|^1000|^1M/, ''); const sc = (b === q || m.base === q) ? 0 : (b.startsWith(q) || m.symbol.startsWith(q)) ? 1 : m.symbol.includes(q) ? 2 : 99; if (sc < 99) it.push({ s: m.symbol, sc, v: state.vols[m.symbol] || 0 }); }
@@ -790,18 +769,201 @@ function openDD() {
   $('symList').classList.remove('hidden');
 }
 const closeDD = () => { $('symList').classList.add('hidden'); state.ddIdx = -1; };
+
+/* ===================== VISUAL RENDER ===================== */
+const setStatus = (k, t) => { $('dot').className = 'dot ' + k; $('statusText').textContent = t; };
+function showMsg(html, kind = '') { const m = $('msg'); m.className = 'msg' + (kind ? ' ' + kind : ''); m.innerHTML = html; }
+const hideMsg = () => { $('msg').className = 'msg hidden'; };
+const Q = '<i class="q">?</i>';
+const ARROW_UP = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 20V5M5 11l7-7 7 7" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ARROW_DN = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 4v15M5 13l7 7 7-7" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const FLAT = c => `<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M4 12h16" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.3 }) : null;
+function replay() { document.querySelectorAll('#result .a').forEach(el => { el.classList.remove('in'); void el.offsetWidth; if (io) io.observe(el); else el.classList.add('in'); }); }
+
+function showLoading(sym, tf) {
+  $('result').classList.remove('hidden'); $('rSym').textContent = sym; $('rPx').innerHTML = '<span class="skeleton">0.000000</span>'; $('rChg').textContent = ''; $('rChg').className = 'badge n';
+  $('rHead').innerHTML = '<span class="skeleton">جاري القراءة…</span>'; $('rSub').textContent = ''; $('rWarn').innerHTML = ''; $('rUpd').textContent = '';
+  document.querySelectorAll('#tfSeg button').forEach(b => b.classList.toggle('on', b.dataset.tf === tf)); syncFav();
+}
+
+function chartSVG(L) {
+  const { D, R } = L, ch = D.chart, n = { '5m': 72, '15m': 24, '1h': 24 }[L.tf], st = Math.max(0, ch.c.length - n), cs = ch.c.slice(st), es = R.v.e25s.slice(st);
+  const vals = cs.concat(es.filter(isNum)), lo = Math.min(...vals), hi = Math.max(...vals), sp = hi - lo || hi * 0.01 || 1, W = 360, H = 112, pad = 8;
+  const X = i => (i / (cs.length - 1)) * W, Y = v => pad + (hi - v) / sp * (H - 2 * pad);
+  const line = cs.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const ema = es.map((v, i) => isNum(v) ? `${X(i).toFixed(1)},${Y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
+  const up = cs[cs.length - 1] >= cs[0], col = up ? '#30d158' : '#ff453a';
+  let len = 0; for (let i = 1; i < cs.length; i++) len += Math.hypot(X(i) - X(i - 1), Y(cs[i]) - Y(cs[i - 1]));
+  return `<defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".3"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <polygon class="fadein" points="0,${H} ${line} ${W},${H}" fill="url(#cg)"/>
+    <polyline class="fadein" points="${ema}" fill="none" stroke="#ff9f0a" stroke-width="1.6" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/>
+    <polyline class="drawl" style="--len:${Math.ceil(len)}" points="${line}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle class="fadein pulse" cx="${X(cs.length - 1)}" cy="${Y(cs[cs.length - 1])}" r="4.5" fill="${col}"/>`;
+}
+
+function render(L) {
+  const { D, R } = L, v = R.v;
+  $('result').classList.remove('hidden');
+  $('rSym').textContent = L.sym; $('rPx').textContent = fmtP(R.c);
+  const ch = $('rChg'); ch.textContent = isNum(D.chg24) ? (D.chg24 >= 0 ? '▲ ' : '▼ ') + Math.abs(D.chg24).toFixed(2) + '%' : ''; ch.className = 'badge n ' + (D.chg24 >= 0 ? 'up' : 'down');
+  $('rUpd').textContent = 'تحديث ' + new Date(L.at - state.clockOffset).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  document.querySelectorAll('#tfSeg button').forEach(b => b.classList.toggle('on', b.dataset.tf === L.tf)); syncFav();
+  // status ring = caution level
+  const lv = R.level[0], ringCol = lv === 'danger' ? '#ff453a' : lv === 'alert' ? '#ff9f0a' : '#30d158', frac = lv === 'danger' ? 0.95 : lv === 'alert' ? 0.62 : 0.32;
+  const rf = $('ringFill'); rf.setAttribute('stroke', ringCol); rf.style.setProperty('--c', 214); rf.style.setProperty('--o', (214 * (1 - frac)).toFixed(1));
+  const rt = $('ringTxt'); rt.textContent = R.level[1]; rt.setAttribute('fill', ringCol);
+  const tone = R.sits.length ? (SIT[R.sits[0]].dir > 0 ? 'up' : SIT[R.sits[0]].dir < 0 ? 'down' : 'flat') : (v.stackUp && R.c >= v.E25) ? 'up' : (v.stackDn && R.c <= v.E25) ? 'down' : 'flat';
+  $('cStatus').className = 'card statusc a t-' + tone;
+  $('rHead').textContent = R.head; $('rSub').textContent = R.subShort;
+  $('rWarn').innerHTML = R.warns.slice(0, 3).map((w, i) => `<div class="wrow ${w.lvl}" data-warn="${i}"><span>${w.lvl === 'danger' ? '⛔' : '⚠️'}</span><span style="flex:1">${w.s}</span>${Q}</div>`).join('');
+  // chart
+  $('chartSpan').textContent = v.span; $('chartSvg').innerHTML = chartSVG(L);
+  $('rWatch').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" stroke="#ff9f0a" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ff9f0a"/></svg>راقب <b class="n">${fmtP(v.E25)}</b> — ${R.c >= v.E25 ? 'تحته يضعف' : 'فوقه يتحسن'}`;
+  // crowd
+  const lp = v.longPct, bigCol = v.div === 'sell' ? 'var(--red)' : v.div === 'buy' ? 'var(--green)' : 'var(--label2)';
+  $('tCrowd').innerHTML = isNum(lp) ? `<div class="cap">المتداولين ${Q}</div>
+    <div><div class="v n" style="color:${lp >= 50 ? 'var(--green)' : 'var(--red)'}">${lp.toFixed(0)}%</div>
+    <div class="split"><i class="grow" style="--w:${lp.toFixed(1)}%;background:var(--green)"></i><i class="grow" style="--w:${(100 - lp).toFixed(1)}%;background:var(--red)"></i></div>
+    <div class="s">مع الصعود${v.crowdLong ? ' · أكثر من العادة' : v.crowdShort ? ' · أقل من العادة' : ''}</div></div>
+    <div class="whale" style="color:${bigCol}">🐋 الكبار ${v.bigSt}</div>` : `<div class="cap">المتداولين</div><div class="s">غير متاحة الآن</div>`;
+  // money (open interest)
+  const o1 = D.x && D.x.OI1h;
+  $('tMoney').innerHTML = isNum(o1) ? `<div class="cap">الفلوس ${Q}</div>
+    <div class="${o1 > 0.01 ? 'bob' : o1 < -0.01 ? 'bobd' : ''}">${o1 > 0.01 ? ARROW_UP('#30d158') : o1 < -0.01 ? ARROW_DN('#ff453a') : FLAT('#8e8e93')}</div>
+    <div><div class="v n" style="color:${o1 > 0.01 ? 'var(--green)' : o1 < -0.01 ? 'var(--red)' : 'var(--label2)'}">${pct(o1, 1)}</div><div class="s">${o1 > 0.01 ? 'دخلت آخر ساعة' : o1 < -0.01 ? 'طلعت آخر ساعة' : 'ثابتة آخر ساعة'}</div></div>`
+    : `<div class="cap">الفلوس</div><div class="s">غير متاحة الآن</div>`;
+  // funding dial
+  const f8 = v.f8, deg = clampN(f8 / 0.001, -1, 1) * 75, fWord = f8 >= 0.0005 ? 'زحمة صعود' : f8 <= -0.0005 ? 'زحمة نزول' : 'عادية';
+  $('tFund').innerHTML = `<div class="cap">الرسوم ${Q}</div>
+    <svg width="120" height="64" viewBox="0 0 120 64" style="align-self:center"><path d="M12 56 A48 48 0 0 1 108 56" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8" stroke-linecap="round"/><path d="M12 56 A48 48 0 0 1 36 15" fill="none" stroke="#30d158" stroke-width="8" stroke-linecap="round"/><path d="M84 15 A48 48 0 0 1 108 56" fill="none" stroke="#ff453a" stroke-width="8" stroke-linecap="round"/><g class="needle" style="--deg:${deg.toFixed(1)}deg"><line x1="60" y1="56" x2="60" y2="16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g><circle cx="60" cy="56" r="5" fill="#fff"/></svg>
+    <div class="s" style="text-align:center">${fWord}${v.hours < 8 ? ` · كل ${v.hours}س` : ''}</div>`;
+  // speed ring (RSI 6)
+  const r6 = v.R6, rc = r6 >= 80 || r6 <= 20 ? '#ff9f0a' : '#64d2ff', sw = v.spd === 'سرعة طبيعية' ? 'طبيعية' : r6 >= 80 ? 'سريعة لفوق' : r6 <= 20 ? 'سريعة لتحت' : v.spd.includes('يهدى') ? 'تهدى' : v.spd.includes('يرتد') ? 'ترتد' : 'طبيعية';
+  $('tSpeed').innerHTML = `<div class="cap">السرعة ${Q}</div>
+    <svg width="78" height="78" viewBox="0 0 80 80" style="align-self:center"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="9"/><circle class="fillr" cx="40" cy="40" r="34" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="214" transform="rotate(-90 40 40)" style="--c:214;--o:${(214 * (1 - clampN(r6, 0, 100) / 100)).toFixed(1)}"/><text x="40" y="47" text-anchor="middle" fill="#fff" font-size="20" font-weight="700" font-family="-apple-system,system-ui">${isNum(r6) ? r6.toFixed(0) : '—'}</text></svg>
+    <div class="s" style="text-align:center">${sw}</div>`;
+  // volume bars (last 12 candles vs average)
+  const cv = D.chart.v, k0 = Math.max(0, cv.length - 12), vs = cv.slice(k0), avg = v.m10[cv.length - 2], mx = Math.max(...vs, avg || 0) || 1;
+  const bars = vs.map((x, i) => { const h = Math.max(3, x / mx * 46), last = i === vs.length - 1; return `<rect class="bar" x="${i * 25 + 2}" y="${50 - h}" width="17" height="${h}" rx="4" fill="${last ? '#0a84ff' : 'rgba(235,235,245,.28)'}" style="transition-delay:${(i * 0.04).toFixed(2)}s"/>`; }).join('');
+  const ay = 50 - (avg / mx) * 46;
+  $('tVol').innerHTML = `<div class="cap">حجم التداول ${Q}</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+      <div><div class="v n">${isNum(v.vRatio) ? v.vRatio.toFixed(1) + '×' : '—'}</div><div class="s">${v.volSt}</div></div>
+      <svg width="300" height="52" viewBox="0 0 300 52" style="max-width:62%;height:52px" preserveAspectRatio="none">${bars}${isNum(ay) ? `<line class="fadein" x1="0" x2="300" y1="${ay.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="#ff9f0a" stroke-width="1.4" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : ''}</svg>
+    </div>`;
+  // history of a confirmed situation
+  const h = $('cHist');
+  if (R.sits.length) {
+    const id = R.sits[0], s = SIT_STATS[id];
+    h.innerHTML = `<div class="cap">في الماضي · بعد ساعة ${Q}</div><div class="h2">صعد السعر ${N(s.up.toFixed(0) + '%')} من المرات</div>
+      <div class="row"><span>هذا الموقف</span><div class="tr"><i class="grow" style="--w:${s.up}%;background:${s.up < SIT_BASE_UP ? 'var(--red)' : 'var(--green)'}"></i></div><span class="n">${s.up.toFixed(0)}%</span></div>
+      <div class="row"><span>العادي</span><div class="tr"><i class="grow" style="--w:${SIT_BASE_UP}%;background:#636366"></i></div><span class="n">${SIT_BASE_UP.toFixed(0)}%</span></div>`;
+    h.classList.remove('hidden');
+  } else h.classList.add('hidden');
+  $('rFoot').innerHTML = 'قراءة للبيانات وليست توصية. القرار والمخاطرة عليك.';
+  replay();
+}
+const clampN = (x, a, b) => Math.min(b, Math.max(a, isNum(x) ? x : 0));
+
+/* ===================== EXPLANATION SHEETS ===================== */
+function sec(t, p, now) { return `<div class="shs"><h4>${t}</h4><p${now ? ' class="now"' : ''}>${p}</p></div>`; }
+function openSheet(title, html) { $('shTitle').textContent = title; $('shBody').innerHTML = html; $('sheet').classList.add('show'); $('sheet').setAttribute('aria-hidden', 'false'); }
+function closeSheet() { $('sheet').classList.remove('show'); $('sheet').setAttribute('aria-hidden', 'true'); }
+function info(key) {
+  const L = state.last; if (!L) return; const { D, R } = L, v = R.v, X = D.x || {};
+  const t = { status: 'الخلاصة', chart: 'السعر والمتوسط', crowd: 'المتداولين', money: 'الفلوس (الصفقات المفتوحة)', fund: 'رسوم التمويل', speed: 'سرعة الحركة', vol: 'حجم التداول', hist: 'وش صار في الماضي؟' }[key];
+  let h = '';
+  if (key === 'status') h = sec('وش هي؟', 'جملة وحدة تجمع كل أدوات باينانس للعملة. والحلقة الملونة هي <b>مستوى الحذر</b>: تقيس المخاطر (سيولة، حركة كبيرة، عملة جديدة…) — مو اتجاه السعر.')
+    + sec('وش تقول الحين؟', `${R.head}. ${R.sub}<br>مستوى الحذر «${R.level[1]}»: ${R.level[2]}.`, true)
+    + sec('كيف تستفيد؟', 'اقرأ الخلاصة أول، وبعدها شوف البطاقات تحتها. لو الحذر «خطر» الأفضل تبتعد عن العملة مهما كان الاتجاه.');
+  if (key === 'chart') h = sec('وش هو؟', `الخط الملون هو سعر العملة ل${v.span}. والخط البرتقالي المتقطع هو <b>متوسط السعر</b> (EMA25) — يعطيك "السعر الطبيعي" للفترة.`)
+    + sec('وش يقول الحين؟', `السعر ${R.c >= v.E25 ? 'فوق' : 'تحت'} المتوسط (${N(fmtP(v.E25))}) بـ ${N(pct(v.dist25, 1))}. ${v.trend}.`, true)
+    + sec('كيف تستفيد؟', 'السعر فوق المتوسط = المشترين أقوى، وتحته = البائعين أقوى. ولما يبتعد السعر كثير عن المتوسط غالباً يرجع له. الرقم المكتوب في «راقب» هو هذا المتوسط.');
+  if (key === 'crowd') h = sec('وش هو؟', 'نسبة الحسابات اللي راهنت على <b>الصعود</b> (لونج) مقابل اللي راهنت على <b>النزول</b> (شورت). و«الكبار» 🐋 هم أكبر 20% حسابات في باينانس.')
+    + sec('وش يقول الحين؟', `${N(v.longPct.toFixed(0) + '%')} من المتداولين مع الصعود (معدلها اليومي ${N((v.glsMean / (1 + v.glsMean) * 100).toFixed(0) + '%')}). الكبار: ${v.bigSt}.`, true)
+    + sec('كيف تستفيد؟', 'لما الأغلبية كلهم في جهة وحدة، السعر أحياناً يعاكسهم. وانتبه أكثر لما الكبار يعاكسون الصغار — في اختبارنا على سنة كان هذا ميل بسيط لجهة الكبار.');
+  if (key === 'money') h = sec('وش هي؟', 'مجموع <b>الصفقات المفتوحة</b> على العملة (Open Interest). لما تزيد يعني فلوس جديدة دخلت، ولما تنقص يعني ناس قفلت صفقاتها.')
+    + sec('وش تقول الحين؟', `آخر ساعة: ${v.rg1 ? v.rg1[0] : '—'} (${N(pct(X.OI1h, 1))}). آخر 4 ساعات: ${v.rg4 ? v.rg4[0] : '—'}. المجموع ${N('$' + compact(X.OI * R.c))}.`, true)
+    + sec('كيف تستفيد؟', '• سعر ↑ وفلوس ↑ = صعود قوي عليه فلوس جديدة.<br>• سعر ↑ وفلوس ↓ = صعود أضعف (ناس تقفل).<br>• سعر ↓ وفلوس ↑ = نزول قوي.<br>• سعر ↓ وفلوس ↓ = بيع اضطراري غالباً يخلص بسرعة.');
+  if (key === 'fund') h = sec('وش هي؟', `رسوم يدفعها أحد الطرفين للثاني كل ${v.hours} ساعات. لو المراهنين على الصعود أكثر، هم اللي يدفعون — والعكس.`)
+    + sec('وش تقول الحين؟', `${N(pct(v.fr, 4))} كل ${v.hours} ساعات — ${v.fSt}. الدفعة الجاية بعد ${N(dur(D.nextFunding - serverNow()))}.`, true)
+    + sec('كيف تستفيد؟', 'الإبرة في الأخضر = عادي أو المراهنين على النزول يدفعون. في الأحمر = الرهان على الصعود مزدحم ومكلف، وهذا وقود لنزول مفاجئ. ولو باينانس صارت تحسبها كل ساعة أو 4 ساعات بدل 8، معناه السوق مزدحم جداً.');
+  if (key === 'speed') h = sec('وش هي؟', 'مقياس من 0 لـ 100 (اسمه RSI) يقيس هل السعر يتحرك بسرعة زيادة. الرقم في الحلقة هو المقياس السريع (RSI6).')
+    + sec('وش تقول الحين؟', `${N(v.R6.toFixed(0))} — ${v.spd}. (المتوسط ${N(v.R12.toFixed(0))}، والبطيء ${N(v.R24.toFixed(0))})`, true)
+    + sec('كيف تستفيد؟', 'فوق 80 = طلع بسرعة زيادة وممكن يتعب ويرجع. تحت 20 = نزل بسرعة زيادة وممكن يرتد. بين 20 و80 طبيعي.');
+  if (key === 'vol') h = sec('وش هو؟', 'كمية البيع والشراء في كل شمعة. الأعمدة آخر 12 شمعة، والأزرق هي الشمعة الحالية (لسا ما قفلت)، والخط البرتقالي هو المعدل.')
+    + sec('وش يقول الحين؟', `الشمعة الحالية ${N(isNum(v.vRatio) ? v.vRatio.toFixed(1) + '×' : '—')} المعدل — ${v.volSt}.`, true)
+    + sec('كيف تستفيد؟', 'تداول ضخم مفاجئ (3 أضعاف أو أكثر) غالباً معناه خبر أو حركة قوية، والحركات بعدها تكون عنيفة. الحركة وقت التداول الضعيف أقل موثوقية.');
+  if (key === 'hist' && R.sits.length) { const id = R.sits[0], s = SIT_STATS[id];
+    h = sec('وش هو؟', `«${SIT[id].name}»: ${SIT[id].desc}`)
+      + sec('وش صار في الماضي؟', `اختبرناه على سنة كاملة: صار ${N(s.n.toLocaleString('en-US'))} مرة على ${N(s.coins)} عملة. بعدها بساعة، السعر صعد في ${N(s.up.toFixed(0) + '%')} من المرات، والعادي لأي وقت ${N(SIT_BASE_UP.toFixed(0) + '%')}. متوسط الحركة ${N(pctRaw(s.m60 * 100, 2))}.`, true)
+      + sec('كيف تستفيد؟', 'الفرق صغير — معلومة مساعدة تضيفها لقرارك، مو إشارة دخول لحالها.'); }
+  openSheet(t, h);
+}
+function warnInfo(i) { const w = state.last && state.last.R.warns[i]; if (w) openSheet(w.s, sec('ليش هذا مهم؟', w.t, true)); }
+function allTools() {
+  const L = state.last; if (!L) return;
+  const rows = L.R.tools.map(t => `<div class="trow"><div class="h"><span class="nm">${t.k}<small>${t.sub}</small></span><span class="st ${t.tone}">${t.st}</span></div><div class="vl">${t.val}</div><div class="say">${t.say}</div></div>`).join('');
+  const other = L.R.other.length ? `<div class="say dim" style="margin-top:14px">ظهرت كمان: ${L.R.other.map(s => SIT[s].name).join('، ')} — بس هذي ما ثبتت لما اختبرناها على الماضي.</div>` : '';
+  const age = L.D.x && isNum(L.D.x.metricsAge) ? `<div class="dim" style="font-size:12px;margin-top:6px">عمر بيانات المراكز ${Math.round(L.D.x.metricsAge / 60000)} دقيقة</div>` : '';
+  openSheet('كل أدوات باينانس', rows + other + age);
+}
+function copyText() {
+  const L = state.last; if (!L) return '';
+  const strip = h => String(h).replace(/<[^>]+>/g, '');
+  return [`${L.sym} (${L.tf}) — ${L.R.head} · ${L.R.subShort} · الحذر: ${L.R.level[1]}`, ...L.R.brief.map(b => `• ${b.lbl}: ${strip(b.txt)}`),
+    ...L.R.warns.map(w => '⚠ ' + w.s), '👁 ' + strip(L.R.watch), 'قراءة للبيانات وليست توصية.'].join('\n');
+}
+
+/* ===================== FAVOURITES / RECENT ===================== */
+const favs = () => store.get('favs', []), recents = () => store.get('recent', []);
+function addRecent(sym) { store.set('recent', [sym, ...recents().filter(s => s !== sym)].slice(0, 10)); renderPills(); }
+function toggleFav() { const s = state.symbol; if (!s) return; const f = favs(); store.set('favs', f.includes(s) ? f.filter(x => x !== s) : [s, ...f]); syncFav(); renderPills(); }
+function syncFav() { const on = favs().includes(state.symbol); $('favBtn').textContent = on ? '★' : '☆'; $('favBtn').classList.toggle('on', on); }
+function renderPills() {
+  const f = favs(), list = [...f, ...recents().filter(s => !f.includes(s))].slice(0, 12);
+  $('pills').innerHTML = list.map(s => `<button class="pill${s === state.symbol ? ' on' : ''}" data-sym="${esc(s)}">${f.includes(s) ? '★ ' : ''}${esc(s.replace(/USDT$/, ''))}</button>`).join('');
+}
+function renderFavPane() {
+  const row = s => `<div class="lrow" data-sym="${esc(s)}"><span class="s">${esc(s)}</span><span class="rp dim">${state.vols[s] ? '$' + compact(state.vols[s]) : ''}</span></div>`;
+  $('favList').innerHTML = favs().map(row).join('') || '<div class="empty">اضغط ☆ جنب اسم أي عملة عشان تضيفها هنا.</div>';
+  $('recentList').innerHTML = recents().map(row).join('') || '<div class="empty">ما فتحت عملات للحين.</div>';
+}
+
+/* ===================== RADAR LIST ===================== */
+function renderRadar() {
+  const R = state.radar; if (!R) return;
+  $('radarList').innerHTML = R.list.map(r => {
+    const tags = [];
+    if (r.qv < 10e6) tags.push([9, '<span class="tag down">تداول ضعيف</span>']);
+    if (isNum(r.oiUsd) && r.oiUsd < 5e6) tags.push([8, '<span class="tag down">فلوس قليلة</span>']);
+    if (isNum(r.VS1h) && r.VS1h >= 2) tags.push([r.VS1h, `<span class="tag info">تداول ${N(r.VS1h.toFixed(1) + '×')}</span>`]);
+    if (isNum(r.P1h) && Math.abs(r.P1h) >= 0.02) tags.push([Math.abs(r.P1h) * 100, `<span class="tag ${r.P1h > 0 ? 'up' : 'down'}">ساعة ${N(pct(r.P1h, 1))}</span>`]);
+    if (isNum(r.OI1h) && Math.abs(r.OI1h) >= 0.03) tags.push([Math.abs(r.OI1h) * 60, `<span class="tag ${r.OI1h > 0 ? 'info' : 'warn'}">فلوس ${N(pct(r.OI1h, 1))}</span>`]);
+    if (Math.abs(r.f8) >= 0.0005) tags.push([Math.abs(r.f8) * 1e4, `<span class="tag warn">رسوم ${r.f8 > 0 ? 'زحمة صعود' : 'زحمة نزول'}</span>`]);
+    if (r.h < 8) tags.push([4, `<span class="tag warn">رسوم كل ${r.h}س</span>`]);
+    if (r.GLS >= 3) tags.push([3, '<span class="tag warn">الأغلبية مع الصعود</span>']); else if (r.GLS <= 0.6) tags.push([3, '<span class="tag warn">الأغلبية مع النزول</span>']);
+    tags.sort((a, b) => b[0] - a[0]);
+    return `<div class="lrow" data-sym="${esc(r.s)}"><span class="s">${esc(r.s.replace(/USDT$/, ''))}</span><span class="rp">${fmtP(r.px, r.s)} <span class="${r.chg >= 0 ? 'up' : 'down'}">${pctRaw(r.chg, 1)}</span></span><div class="tags">${tags.slice(0, 3).map(t => t[1]).join('') || '<span class="tag">نشاط عادي</span>'}</div></div>`;
+  }).join('') || '<div class="empty">ما فيه نشاط غير طبيعي الآن.</div>';
+}
+
+/* ===================== NAVIGATION ===================== */
 function setTab(t) {
-  const coin = t === 'coin';
-  $('paneCoin').classList.toggle('hidden', !coin); $('paneRadar').classList.toggle('hidden', coin);
-  $('tabCoin').classList.toggle('active', coin); $('tabRadar').classList.toggle('active', !coin);
-  $('tabCoin').setAttribute('aria-selected', coin); $('tabRadar').setAttribute('aria-selected', !coin);
-  if (!coin && !state.radar && !state.scanning) scan();
+  for (const [id, pane] of [['tabCoin', 'paneCoin'], ['tabRadar', 'paneRadar'], ['tabFav', 'paneFav']]) { const on = pane === t; $(pane).classList.toggle('hidden', !on); $(id).classList.toggle('on', on); }
+  $('paneTest').classList.add('hidden'); $('tabbar').classList.remove('hidden');
+  if (t === 'paneRadar' && !state.radar && !state.scanning) scan();
+  if (t === 'paneFav') renderFavPane();
+  window.scrollTo({ top: 0 });
 }
-function setTf(tf) {
-  state.tf = tf; store.set('tf', tf);
-  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === tf));
-  if (state.symbol) analyze(state.symbol);
+function openTest(open) {
+  if (!open) { setTab('paneFav'); return; }
+  for (const p of ['paneCoin', 'paneRadar', 'paneFav']) $(p).classList.add('hidden');
+  $('paneTest').classList.remove('hidden'); $('tabbar').classList.add('hidden');
+  if (state.symbol) $('testSym').value = state.symbol; window.scrollTo({ top: 0 });
 }
+function setTf(tf) { state.tf = tf; store.set('tf', tf); if (state.symbol) analyze(state.symbol); }
 function bind() {
   const inp = $('symInput');
   inp.addEventListener('input', () => { state.ddIdx = -1; openDD(); });
@@ -815,32 +977,39 @@ function bind() {
   });
   $('symList').addEventListener('mousedown', e => e.preventDefault());
   $('symList').addEventListener('click', e => { const o = e.target.closest('.opt'); if (o) { analyze(o.dataset.sym); inp.blur(); } });
-  document.addEventListener('pointerdown', e => { if (!e.target.closest('.field')) closeDD(); });
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('.searchwrap')) closeDD(); });
   $('msg').addEventListener('click', e => { const c = e.target.closest('.sug'); if (c) analyze(c.dataset.sym); });
-  $('goBtn').addEventListener('click', () => { analyze(inp.value || state.symbol); inp.blur(); });
   $('pasteBtn').addEventListener('click', async () => { try { const t = await navigator.clipboard.readText(); if (t) { inp.value = t.trim(); analyze(t); return; } } catch (e) { /* denied */ } inp.focus(); showMsg('اضغط مطولاً على الخانة واختر «لصق».'); });
-  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => setTf(b.dataset.tf)));
+  $('pills').addEventListener('click', e => { const b = e.target.closest('.pill'); if (b) analyze(b.dataset.sym); });
+  $('tfSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setTf(b.dataset.tf); });
+  $('favBtn').addEventListener('click', toggleFav);
+  $('result').addEventListener('click', e => {
+    const w = e.target.closest('[data-warn]'); if (w) { warnInfo(+w.dataset.warn); return; }
+    const c = e.target.closest('[data-info]'); if (c) info(c.dataset.info);
+  });
+  $('allBtn').addEventListener('click', allTools);
+  $('sheetDim').addEventListener('click', closeSheet); $('shClose').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
   $('refreshBtn').addEventListener('click', () => { if (state.symbol) analyze(state.symbol, { silent: true }); });
-  $('detailsBtn').addEventListener('click', () => { const d = $('details'), open = d.classList.toggle('hidden') === false; $('detailsBtn').textContent = open ? 'إخفاء التفاصيل ▴' : 'تفاصيل الأدوات ▾'; $('detailsBtn').setAttribute('aria-expanded', open); if (open) d.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-  $('copyBtn').addEventListener('click', async () => { const t = copyText(); try { await navigator.clipboard.writeText(t); $('copyBtn').textContent = 'تم ✓'; setTimeout(() => { $('copyBtn').textContent = 'نسخ'; }, 1500); } catch (e) { /* no clipboard */ } });
-  $('tabCoin').addEventListener('click', () => setTab('coin'));
-  $('tabRadar').addEventListener('click', () => setTab('radar'));
+  $('copyBtn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(copyText()); $('copyBtn').textContent = 'تم النسخ ✓'; setTimeout(() => { $('copyBtn').textContent = 'نسخ القراءة'; }, 1500); } catch (e) { /* no clipboard */ } });
+  $('tabCoin').addEventListener('click', () => setTab('paneCoin'));
+  $('tabRadar').addEventListener('click', () => setTab('paneRadar'));
+  $('tabFav').addEventListener('click', () => setTab('paneFav'));
   $('scanBtn').addEventListener('click', scan);
-  $('testLink').addEventListener('click', e => { e.preventDefault(); openTest(true); });
+  for (const id of ['radarList', 'favList', 'recentList']) $(id).addEventListener('click', e => { const r = e.target.closest('.lrow'); if (r) { setTab('paneCoin'); analyze(r.dataset.sym); } });
+  $('testLink').addEventListener('click', () => openTest(true));
   $('testBack').addEventListener('click', () => openTest(false));
   $('testRun').addEventListener('click', selfTest);
   $('testCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(state.testReport || ''); $('testCopy').textContent = 'تم النسخ ✓'; setTimeout(() => { $('testCopy').textContent = 'نسخ التقرير'; }, 1500); } catch (e) { /* no clipboard */ } });
-  $('radarList').addEventListener('click', e => { const r = e.target.closest('.rrow'); if (r) { setTab('coin'); analyze(r.dataset.sym); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
-  setInterval(() => { if (!document.hidden && state.symbol && !state.busy && $('paneRadar').classList.contains('hidden') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
+  setInterval(() => { if (!document.hidden && state.symbol && !state.busy && !$('paneCoin').classList.contains('hidden') && !$('sheet').classList.contains('show') && state.last && serverNow() - state.last.at > 60000) analyze(state.symbol, { silent: true }); }, 15000);
 }
 async function init() {
-  bind();
+  bind(); renderPills();
   const tf = store.get('tf', '15m'); state.tf = TF_MS[tf] ? tf : '15m';
-  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === state.tf));
-  if (location.hash === '#selftest') { openTest(true); await loadUniverse().catch(() => {}); setStatus('live', 'جاهز'); return; }
+  if (location.hash === '#selftest') { openTest(true); await loadUniverse().catch(() => {}); return; }
   let sym = store.get('sym', ''); const h = decodeURIComponent((location.hash || '').slice(1));
-  if (h) { const [s, t] = h.split('@'); if (s) sym = s; if (t && TF_MS[t]) { state.tf = t; document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.tf === t)); } }
-  setStatus('loading', 'تحميل قائمة العقود…');
+  if (h) { const [s, t] = h.split('@'); if (s) sym = s; if (t && TF_MS[t]) state.tf = t; }
+  setStatus('loading', 'تحميل…');
   await loadUniverse().catch(() => {});
   setStatus(state.universeOK ? 'live' : 'error', state.universeOK ? 'جاهز' : 'تعذر تحميل القائمة');
   if (sym) analyze(sym); else $('symInput').focus();
