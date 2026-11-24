@@ -99,24 +99,29 @@ button{font:inherit;color:inherit}
 .hist .tr{flex:1;height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
 .hist .tr i{display:block;height:100%;border-radius:99px;width:var(--w)}
 .hist .h2{font-size:17px;font-weight:700;margin-top:4px}
-.rgrow{margin-top:14px}
-.rgrow .rgl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;color:var(--label2)}
-.rgrow .rgl b{color:var(--label);font-size:16px;font-weight:700}
-.rgline{direction:ltr;display:flex;align-items:stretch;gap:10px;margin-top:8px}
-.rgch{flex:1;min-width:0;position:relative;height:74px}
-.rgch svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.rgax{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:6px 0}
-.rgp{font-size:13px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rghead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.rgseg button{font-family:var(--font);font-size:13px;padding:5px 12px}
+.rgsay{font-size:15px;color:var(--label2);margin-top:12px}
+.rgnums{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px}
+.rgnums .rgp{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:0}
 .rgp.lo{color:#ff6961}.rgp.hi{color:#30d158}
-.rgnow{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(0,0,0,.5);transition:left 2.5s linear,top .8s var(--ease),background .3s}
+.rgand{font-size:16px;color:var(--label2)}
+.rgsub{font-size:13px;color:var(--label2);margin-top:2px}
+.rgch{direction:ltr;position:relative;height:128px;margin:14px 0 22px}
+.rgch svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.rgnow{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(0,0,0,.5);transition:top .35s var(--ease),background .3s;z-index:2}
 .rgnow::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid currentColor;color:rgba(255,255,255,.7);animation:rgpulse 1.6s ease-out infinite}
 @keyframes rgpulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(2.2);opacity:0}}
 .rgnow.out{background:#ff9f0a}.rgnow.out::after{color:rgba(255,159,10,.9)}
-.rgcorr.rgnew{animation:rgIn 1s var(--ease) both;transform-origin:center}
+.rgtag{position:absolute;right:6px;font-size:11px;font-weight:600;transform:translateY(-50%);padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.55);white-space:nowrap;direction:rtl}
+.rgtag.hi{color:#30d158}.rgtag.lo{color:#ff6961}
+.rgtime{position:absolute;bottom:-20px;font-size:11px;color:var(--label3,rgba(235,235,245,.45));transform:translateX(-50%);white-space:nowrap;direction:rtl}
+.rgtime.end{transform:translateX(-100%)}.rgtime.start{transform:none}
+.rgcorr.rgnew{animation:rgIn .9s var(--ease) both;transform-origin:center}
 @keyframes rgIn{from{transform:scaleY(.1);opacity:0}to{transform:none;opacity:1}}
-.rgst{font-size:13px;margin-top:6px;color:var(--label2)}
-.rgst.in{color:#30d158}.rgst.up,.rgst.dn{color:#ff9f0a}
-.rgleft{font-variant-numeric:tabular-nums}
+.rgfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+.rgst{color:var(--label2)}.rgst.in{color:#30d158}.rgst.up,.rgst.dn{color:#ff9f0a}
+.rgleft{color:var(--label2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .rgnote{font-size:13px;color:var(--label2);margin-top:12px}
 .more{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:14px 16px;border-radius:16px;background:var(--card);font-size:16px;color:var(--blue);font-weight:600;cursor:pointer;width:100%;appearance:none;border:0;text-align:right}
 .links{display:flex;justify-content:center;gap:18px;margin-top:16px;font-size:13px}
@@ -503,7 +508,7 @@ const { isNum, ema, rsi, sma, buildSeries, detectAt, metricsAt, SIT, idxAt, valA
 const API = 'https://fapi.binance.com';
 const TF_MS = { '5m': 3e5, '15m': 9e5, '1h': 36e5 };
 const UI_TF = { '15m': 1, '1h': 1 };
-const APP_VERSION = '3.1 · مباشر';   // timeframes offered in the app
+const APP_VERSION = '3.2 · مباشر';   // timeframes offered in the app
 const REQ_TIMEOUT = 8000;
 // Historical outcome of each situation: 90 USDT perpetuals, Nov 2025 – Oct 2026, detection code = SHARED block above.
 // m60 = mean price change 60 min later; up = % of cases higher after 60 min (normal for any moment ≈ 47.7%).
@@ -1036,69 +1041,75 @@ function rgStatus(b, p) { return p > b.hi ? ['up', '▲ طلع فوق النطا
 function renderRange(L) {
   const el = $('cRange'), price = livePrice(L), now = serverNow(), B = bandsFor(L.sym, L.D, price, now), b15 = B[15], b60 = B[60];
   if (!b15 || !b60) { el.dataset.key = ''; el.innerHTML = `<div class="cap">الحركة المتوقعة ${Q}</div><div class="s" style="margin-top:8px">تحتاج يوم كامل من البيانات — العملة جديدة أو البيانات ناقصة.</div>`; return; }
-  const key = b15.id + '|' + b60.id;
+  const sel = store.get('rgm', 15) === 60 ? 60 : 15, b = B[sel], key = b15.id + '|' + b60.id + '|' + sel;
+  for (const x of [b15, b60]) if (!x.past) loadPast(L.sym, x);
   if (el.dataset.key !== key) {
-    const row = (lbl, b) => `<div class="rgrow" data-m="${b.m}"><div class="rgl"><span>${lbl} · <span class="rgleft"></span></span><b class="n">${LTR('±' + (b.pct * 100).toFixed(b.pct < 0.01 ? 2 : 1) + '%')}</b></div>
-      <div class="rgline"><div class="rgch"><svg viewBox="0 0 300 74" preserveAspectRatio="none" aria-hidden="true"></svg><i class="rgnow"></i></div>
-      <div class="rgax"><span class="rgp hi n">${fmtP(b.hi)}</span><span class="rgp lo n">${fmtP(b.lo)}</span></div></div>
-      <div class="rgst"></div></div>`;
-    const prev = B.prev15 ? (B.prev15.up || B.prev15.dn ? ' النطاق اللي قبله (15 د): السعر طلع برا.' : ' النطاق اللي قبله (15 د): السعر بقي داخله ✓') : '';
-    el.innerHTML = `<div class="cap">الحركة المتوقعة ${Q}</div>${row('خلال 15 دقيقة', b15)}${row('خلال ساعة', b60)}
-      <div class="rgnote">الخط الأبيض هو السعر لحظة بلحظة، والمنطقة الملونة هي النطاق المتوقع. غالباً يبقى السعر داخلها (8 من 10 مرات). ما تقول بيطلع أو بينزل.${b15.pct < 0.0025 ? ' الحركة صغيرة — رسوم الدخول والخروج تاكل جزء كبير منها.' : ''}${prev}</div>`;
+    const lbl = sel === 15 ? 'الـ 15 دقيقة' : 'الساعة', endLbl = sel === 15 ? 'بعد 15 د' : 'بعد ساعة', preLbl = sel === 15 ? 'قبل 9 د' : 'قبل 36 د';
+    const prevB = B['prev' + sel], prev = prevB ? `<div class="rgsub" style="margin-top:8px">${prevB.up || prevB.dn ? '• النطاق اللي قبله: السعر طلع برا.' : '• النطاق اللي قبله: السعر بقي داخله ✓'}</div>` : '';
+    el.innerHTML = `<div class="rghead"><div class="cap">الحركة المتوقعة ${Q}</div><div class="seg rgseg"><button data-rgm="60" class="${sel === 60 ? 'on' : ''}">ساعة</button><button data-rgm="15" class="${sel === 15 ? 'on' : ''}">15 د</button></div></div>
+      <div class="rgsay">خلال ${lbl} الجاية، السعر غالباً بين</div>
+      <div class="rgnums"><span class="rgp lo n">${fmtP(b.lo)}</span><span class="rgand">و</span><span class="rgp hi n">${fmtP(b.hi)}</span></div>
+      <div class="rgsub">يعني ممكن يتحرك لحد ${N(LTR((b.pct * 100).toFixed(b.pct < 0.01 ? 2 : 1) + '%'))} لفوق أو لتحت${b.pct < 0.0025 ? ' — حركة صغيرة، الرسوم تاكل جزء كبير منها' : ''}</div>
+      <div class="rgch" data-m="${sel}"><svg viewBox="0 0 300 128" preserveAspectRatio="none" aria-hidden="true"></svg><i class="rgnow"></i>
+        <span class="rgtag hi">أعلى متوقع</span><span class="rgtag lo">أدنى متوقع</span>
+        <span class="rgtime start" style="left:0">${preLbl}</span><span class="rgtime t0">الحين</span><span class="rgtime end" style="left:100%">${endLbl}</span></div>
+      <div class="rgfoot"><span class="rgst"></span><span class="rgleft"></span></div>${prev}
+      <div class="rgnote">الخط الأبيض = السعر لحظة بلحظة. المنطقة الملونة = المتوقع. 8 من كل 10 مرات يبقى السعر داخلها — ما تقول بيطلع أو بينزل.</div>`;
     el.dataset.key = key;
-    for (const b of [b15, b60]) if (!b.past) loadPast(L.sym, b);
   }
   updateRangeLive(price, now);
 }
 async function loadPast(sym, b) {   // the minutes before the band (1m candles) so the chart has context from the start
-  if (b.pastLoading) return; b.pastLoading = true;
-  try { const n = b.m === 15 ? 9 : 31, raw = await apiOnce(`/fapi/v1/klines?symbol=${encodeURIComponent(sym)}&interval=1m&limit=${n}`);
+  if (b.pastLoading || b.past) return; b.pastLoading = true;
+  try { const n = b.m === 15 ? 11 : 38, raw = await apiOnce(`/fapi/v1/klines?symbol=${encodeURIComponent(sym)}&interval=1m&limit=${n}`);
     b.past = (Array.isArray(raw) ? raw : []).map(r => [+r[6] + 1, +r[4]]).filter(([t, p]) => t <= b.t0 && isNum(p) && p > 0).slice(-(n - 1)); }
   catch (e) { b.past = []; }
   finally { b.pastLoading = false; }
   const L = state.last; if (L && L.sym === sym) updateRangeLive(NaN, serverNow());
 }
-function drawBand(row, b, price, now) {
-  const svg = row.querySelector('svg'), dot = row.querySelector('.rgnow'); if (!svg || !dot) return;
-  const W = 300, H = 74, pre = b.m * 60000 * 0.5, tA = b.t0 - pre, tB = b.end;
-  const past = (b.past || []).filter(([t]) => t >= tA), live = b.pts || [];
-  let span = b.h * 1.35; for (const [, p] of past.concat(live)) span = Math.max(span, Math.abs(Math.log(p / b.P0)) * 1.12);
-  const X = t => ((clampN(t, tA, tB) - tA) / (tB - tA) * W), Y = p => H / 2 - Math.log(p / b.P0) / span * (H / 2 - 4);
+function drawBand(box, b, price, now) {
+  const svg = box.querySelector('svg'), dot = box.querySelector('.rgnow'); if (!svg || !dot) return;
+  // scrolling view: 'now' stays at a fixed spot; the line trails behind it and the band slides toward it as its time runs out
+  const W = 300, H = 128, win = b.m * 60000, tA = now - win * 0.6, tB = now + win;
+  const past = (b.past || []).filter(([t]) => t >= tA - 60000), live = (b.pts || []).filter(([t]) => t >= tA - 10000 && t <= now).concat(isNum(price) ? [[now, price]] : []);
+  let span = b.h * 1.45; for (const [, p] of past.concat(live)) span = Math.max(span, Math.abs(Math.log(p / b.P0)) * 1.12);
+  const X = t => ((clampN(t, tA, tB) - tA) / (tB - tA) * W), Y = p => H / 2 - Math.log(p / b.P0) / span * (H / 2 - 6);
   const path = pts => pts.map(([t, p], i) => (i ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(p).toFixed(1)).join('');
-  const x0 = X(b.t0), yH = Y(b.hi), yL = Y(b.lo), pastPts = past.length ? past.concat([[b.t0, b.P0]]) : [];
-  const gid = 'rgg' + b.m;
-  svg.innerHTML = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#30d158" stop-opacity=".30"/><stop offset=".5" stop-color="#ffffff" stop-opacity=".06"/><stop offset="1" stop-color="#ff453a" stop-opacity=".30"/></linearGradient></defs>
-    <rect class="rgcorr${b.drawn ? '' : ' rgnew'}" x="${x0.toFixed(1)}" y="${yH.toFixed(1)}" width="${(W - x0).toFixed(1)}" height="${(yL - yH).toFixed(1)}" rx="6" fill="url(#${gid})"/>
-    <line x1="${x0.toFixed(1)}" x2="${W}" y1="${yH.toFixed(1)}" y2="${yH.toFixed(1)}" stroke="#30d158" stroke-width="1.2" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
-    <line x1="${x0.toFixed(1)}" x2="${W}" y1="${yL.toFixed(1)}" y2="${yL.toFixed(1)}" stroke="#ff453a" stroke-width="1.2" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
-    <line x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="0" y2="${H}" stroke="rgba(235,235,245,.25)" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>
+  const x0 = X(b.t0), x1 = X(b.end), xN = X(now), yH = Y(b.hi), yL = Y(b.lo), pastPts = past.length ? past.concat([[b.t0, b.P0]]) : [];
+  svg.innerHTML = `<defs><linearGradient id="rgg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#30d158" stop-opacity=".28"/><stop offset=".5" stop-color="#ffffff" stop-opacity=".05"/><stop offset="1" stop-color="#ff453a" stop-opacity=".28"/></linearGradient></defs>
+    <rect class="rgcorr${b.drawn ? '' : ' rgnew'}" x="${x0.toFixed(1)}" y="${yH.toFixed(1)}" width="${Math.max(0, x1 - x0).toFixed(1)}" height="${(yL - yH).toFixed(1)}" rx="8" fill="url(#rgg)"/>
+    <line x1="${x0.toFixed(1)}" x2="${x1.toFixed(1)}" y1="${yH.toFixed(1)}" y2="${yH.toFixed(1)}" stroke="#30d158" stroke-width="1.4" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>
+    <line x1="${x0.toFixed(1)}" x2="${x1.toFixed(1)}" y1="${yL.toFixed(1)}" y2="${yL.toFixed(1)}" stroke="#ff453a" stroke-width="1.4" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>
+    <line x1="${xN.toFixed(1)}" x2="${xN.toFixed(1)}" y1="0" y2="${H}" stroke="rgba(235,235,245,.3)" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>
     ${pastPts.length > 1 ? `<path d="${path(pastPts)}" fill="none" stroke="rgba(235,235,245,.45)" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>` : ''}
-    ${live.length > 1 ? `<path d="${path(live)}" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` : ''}`;
+    ${live.length > 1 ? `<path d="${path(live)}" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` : ''}`;
   b.drawn = true;
-  const out = isNum(price) && (price > b.hi || price < b.lo);
-  dot.style.left = (X(now) / W * 100).toFixed(2) + '%'; dot.style.top = (Y(isNum(price) ? price : b.P0) / H * 100).toFixed(2) + '%'; dot.classList.toggle('out', out);
+  const pNow = isNum(price) ? price : (live.length ? live[live.length - 1][1] : b.P0), out = pNow > b.hi || pNow < b.lo;
+  dot.style.left = (xN / W * 100).toFixed(2) + '%'; dot.style.top = (Y(pNow) / H * 100).toFixed(2) + '%'; dot.classList.toggle('out', out);
+  const th = box.querySelector('.rgtag.hi'), tl = box.querySelector('.rgtag.lo'), t0 = box.querySelector('.rgtime.t0');
+  const tagR = (100 - x1 / W * 100 + 1.5).toFixed(1) + '%';
+  if (th) { th.style.top = (yH / H * 100).toFixed(1) + '%'; th.style.right = tagR; } if (tl) { tl.style.top = (yL / H * 100).toFixed(1) + '%'; tl.style.right = tagR; } if (t0) t0.style.left = (xN / W * 100).toFixed(1) + '%';
 }
 function updateRangeLive(price, now) {
   const L = state.last, el = $('cRange'); if (!L || !el.dataset.key) return;
   const B = state.bands[L.sym]; if (!B) return;
   if ((B[15] && now >= B[15].end) || (B[60] && now >= B[60].end)) {
-    // renew only from a fresh price (a band must start from the real current price)
-    if (liveFresh(L) || isNum(price)) { renderRange(L); return; }
-    for (const r of el.querySelectorAll('.rgleft')) { const bb = B[r.closest('.rgrow').dataset.m]; if (!bb || bb.end <= now) r.textContent = 'يتجدد…'; }
+    if (liveFresh(L) || isNum(price)) { renderRange(L); return; }   // a band must start from the real current price
   }
-  for (const row of el.querySelectorAll('.rgrow')) {
-    const b = B[row.dataset.m]; if (!b) continue;
-    if (isNum(price)) {
-      if (price > b.hi) b.up = true; if (price < b.lo) b.dn = true;
-      const pts = b.pts = b.pts || [], step = b.m === 15 ? 2000 : 8000, last = pts[pts.length - 1];
-      if (last && now - last[0] < step) last[1] = price, last[0] = Math.max(last[0], now - 1); else pts.push([now, price]);
-      if (pts.length > 400) pts.splice(1, pts.length - 400);
-      const [cls, txt] = rgStatus(b, price), st = row.querySelector('.rgst'); st.className = 'rgst ' + cls; st.textContent = txt;
-    }
-    const lastP = b.pts && b.pts.length ? b.pts[b.pts.length - 1][1] : b.P0;
-    if (now < b.end) drawBand(row, b, isNum(price) ? price : lastP, now);
-    if (now < b.end) row.querySelector('.rgleft').textContent = 'باقي ' + mmss(b.end - now);
+  // record the price into both bands (points are kept every 2 s / 8 s; the newest point is the live tip)
+  for (const m of [15, 60]) { const b = B[m]; if (!b || !isNum(price) || now >= b.end) continue;
+    if (price > b.hi) b.up = true; if (price < b.lo) b.dn = true;
+    const pts = b.pts = b.pts || [], step = m === 15 ? 2000 : 8000, n = pts.length;
+    if (n >= 2 && now - pts[n - 2][0] < step) pts[n - 1] = [now, price]; else pts.push([now, price]);
+    if (pts.length > 500) pts.splice(1, pts.length - 500);
   }
+  const box = el.querySelector('.rgch'); if (!box) return;
+  const b = B[box.dataset.m]; if (!b) return;
+  if (now >= b.end) { el.querySelector('.rgleft').textContent = 'يتجدد…'; return; }
+  const lastP = b.pts && b.pts.length ? b.pts[b.pts.length - 1][1] : b.P0, pNow = isNum(price) ? price : lastP;
+  drawBand(box, b, NaN, now);
+  const [cls, txt] = rgStatus(b, pNow), st = el.querySelector('.rgst'); st.className = 'rgst ' + cls; st.textContent = txt;
+  el.querySelector('.rgleft').textContent = 'باقي ' + mmss(b.end - now);
 }
 function saveBands() { try { const now = serverNow(), out = {};
   for (const [sym, B] of Object.entries(state.bands)) { const o = {}; for (const m of [15, 60]) if (B[m] && B[m].end > now) o[m] = B[m]; if (o[15] || o[60]) out[sym] = o; }
@@ -1110,7 +1121,8 @@ function loadBands() { const raw = store.get('bands', {}), now = Date.now(); if 
 function liveFresh(L) { const lp = state.live; return !!(lp && lp.sym === L.sym && serverNow() - lp.at < 20000); }
 function livePrice(L) { const lp = state.live; return lp && lp.sym === L.sym && serverNow() - lp.at < 20000 ? lp.p : L.R.c; }
 /* ===================== LIVE: Binance WebSocket (trades, current candle, 24h), REST fallback every 1 s ===================== */
-const WS_URLS = ['wss://fstream.binance.com/stream?streams=', 'wss://fstream.binance.com/market/stream?streams='];
+// Binance split the USDⓈ-M stream URLs (2026): trades / candles / tickers are served under /market; legacy paths no longer deliver them.
+const WS_URLS = ['wss://fstream.binance.com/market/stream?streams=', 'wss://fstream.binance.com/stream?streams='];
 const wsLive = () => !!(state.ws && state.ws.readyState === 1 && Date.now() - state.wsGotAt < 6000);
 function liveConnect() {
   const L = state.last, want = L && !document.hidden && !$('result').classList.contains('hidden') ? L.sym + '|' + L.tf : '';
@@ -1120,6 +1132,8 @@ function liveConnect() {
   const s = L.sym.toLowerCase(), url = WS_URLS[state.wsUrl % WS_URLS.length] + `${s}@aggTrade/${s}@kline_${L.tf}/${s}@miniTicker`;
   let ws; try { ws = new WebSocket(url); } catch (e) { state.wsFails++; state.wsUrl++; return; }
   state.ws = ws; state.wsKey = want; state.wsGotAt = 0; let got = false;
+  // connected but silent (wrong route) → close and try the next URL
+  setTimeout(() => { if (state.ws === ws && !got) { try { ws.close(); } catch (e) { /* closed */ } } }, 7000);
   ws.onmessage = ev => {
     let d; try { d = JSON.parse(ev.data); d = d.data || d; } catch (e) { return; }
     got = true; state.wsGotAt = Date.now(); state.wsFails = 0;
@@ -1299,6 +1313,7 @@ function bind() {
   $('tfSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setTf(b.dataset.tf); });
   $('favBtn').addEventListener('click', toggleFav);
   $('result').addEventListener('click', e => {
+    const rg = e.target.closest('[data-rgm]'); if (rg) { store.set('rgm', +rg.dataset.rgm); if (state.last) renderRange(state.last); return; }
     const w = e.target.closest('[data-warn]'); if (w) { warnInfo(+w.dataset.warn); return; }
     const c = e.target.closest('[data-info]'); if (c) info(c.dataset.info);
   });
