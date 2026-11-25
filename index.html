@@ -897,7 +897,7 @@ async function selfTestRun() {
   const pos = [['openInterestHist', 'sumOpenInterest', 'الصفقات المفتوحة'], ['globalLS', 'longShortRatio', 'رأي المتداولين'], ['topPosition', 'longShortRatio', 'الحسابات الكبيرة (مراكز)'], ['topAccount', 'longShortRatio', 'الحسابات الكبيرة (عدد)'], ['taker', 'buySellRatio', 'مين مستعجل'], ['basis', 'basisRate', 'Basis']];
   for (const [k, key, name] of pos) {
     const r = last(res[k]); if (!r) { add(false, name, 'لا توجد بيانات'); continue; }
-    const age = (now - +r.timestamp) / 60000;
+    const age = (now - (+r.timestamp + (k === 'taker' ? 300000 : 0))) / 60000;   // the taker ratio is stamped at its period start, the others at the end
     add(age < 20 && +r[key] !== 0, `${name} (عمرها ${age.toFixed(0)} د)`, String(r[key]));
     rep.push(`${k} ts=${r.timestamp} (${new Date(+r.timestamp).toISOString()}) ${key}=${r[key]}${k === 'taker' ? ` buy=${r.buyVol} sell=${r.sellVol}` : ''} ageMin=${age.toFixed(1)}`);
   }

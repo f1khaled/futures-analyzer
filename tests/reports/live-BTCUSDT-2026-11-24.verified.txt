@@ -1,0 +1,24 @@
+Verifying BTCUSDT
+15m candle (open/high/low/close/volume):
+  ✓  open: site=60405.6 archive=60405.6
+  ✓  high: site=60512.8 archive=60512.8
+  ✓  low: site=59860.6 archive=59860.6
+  ✓  close: site=59948.8 archive=59948.8
+  ✓  volume: site=4119.674 archive=4119.674
+Indicators on closed candles (independent implementation):
+  ✓  EMA7: site=60217.66529 archive=60217.66529
+  ✓  EMA25: site=60198.93273 archive=60198.93273
+  ✓  EMA99: site=60625.56271 archive=60625.56271
+  ✓  RSI6: site=36.561774 archive=36.56177361
+  ✓  RSI12: site=43.771775 archive=43.77177503
+  ✓  RSI24: site=45.109058 archive=45.1090582
+  ✓  VOL MA5: site=4115.134 archive=4115.134
+  ✓  VOL MA10: site=3992.5217 archive=3992.5217
+Positioning data (Binance 5m statistics):
+  ✓  openInterestHist.sumOpenInterest: site=97363.79 archive=97363.79
+  ≈  globalLS.longShortRatio: site=2.4746 archive=2.47431974  (differs by 0.011%)
+  ✓  topPosition.longShortRatio: site=1.6563 archive=1.656311
+  ≈  topAccount.longShortRatio: site=2.87 archive=2.87047227  (differs by 0.016%)
+  ✓  taker.buySellRatio: site=1.6074 archive=1.607436
+
+RESULT: 16 matched, 2 close (Binance API vs archive, <0.1%), 0 mismatched

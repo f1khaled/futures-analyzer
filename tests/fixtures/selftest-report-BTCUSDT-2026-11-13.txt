@@ -8,7 +8,7 @@ openInterestHist ts=1794564300000 (2026-11-13T10:05:00.000Z) sumOpenInterest=101
 globalLS ts=1794564300000 (2026-11-13T10:05:00.000Z) longShortRatio=3.46906456 ageMin=2.0
 topPosition ts=1794564300000 (2026-11-13T10:05:00.000Z) longShortRatio=2.091983 ageMin=2.0
 topAccount ts=1794564300000 (2026-11-13T10:05:00.000Z) longShortRatio=3.97467864 ageMin=2.0
-taker ts=1794564300000 (2026-11-13T10:05:00.000Z) buySellRatio=1.503775 buy=1503.775 sell=1000 ageMin=2.0
+taker ts=1794564000000 (2026-11-13T10:00:00.000Z) buySellRatio=1.503775 buy=1503.775 sell=1000 ageMin=2.0
 basis ts=1794564300000 (2026-11-13T10:05:00.000Z) basisRate=0.0004 ageMin=2.0
 openInterest now=101453.475 time=1794564420000
 premium mark=69176.7 index=69176.7 funding=0.00010000 interval=8h next=1794585600000

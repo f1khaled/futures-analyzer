@@ -109,16 +109,22 @@ def load_metrics(sym, end_ms, csvdir):
 # ---------------- comparison ----------------
 class Checker:
     def __init__(self):
-        self.ok = self.bad = 0
+        self.ok = self.near = self.bad = 0
 
-    def cmp(self, label, site, ref, rel=1e-6, abs_=1e-9):
+    def cmp(self, label, site, ref, rel=1e-6, abs_=1e-9, near_rel=0.0):
+        """✓ equal (within the API's own rounding); ≈ within near_rel (Binance's live API and its later
+        archive file can differ slightly in the last decimals — counted separately, never hidden); ✗ otherwise."""
         if site is None or ref is None or (isinstance(ref, float) and math.isnan(ref)):
             print(f"  ?  {label}: site={site} ref={ref}")
             return
-        good = abs(site - ref) <= max(abs_, rel * max(abs(site), abs(ref)))
-        self.ok += good
-        self.bad += not good
-        print(f"  {'✓' if good else '✗'}  {label}: site={site} archive={ref:.10g}")
+        diff = abs(site - ref)
+        if diff <= max(abs_, rel * max(abs(site), abs(ref))):
+            self.ok += 1; mark = '✓'
+        elif near_rel and diff <= near_rel * max(abs(site), abs(ref)):
+            self.near += 1; mark = '≈'
+        else:
+            self.bad += 1; mark = '✗'
+        print(f"  {mark}  {label}: site={site} archive={ref:.10g}" + (f"  (differs by {diff / abs(ref) * 100:.3f}%)" if mark == '≈' else ''))
 
 
 def num(s):
@@ -167,8 +173,11 @@ def main():
                     chk.cmp(lab, num(ind.group(g)), ref_sma(vols, n)[-1], rel=1e-6)
 
     # ---- positioning metrics (5m buckets) ----
+    # The live API stamps each 5m statistic; the archive stamps rows with create_time. For the taker ratio the API
+    # uses the period START and the archive the period END (+5 min); the others share the same stamp.
     keys = {"openInterestHist": ("sumOpenInterest", 2), "globalLS": ("longShortRatio", 6),
             "topPosition": ("longShortRatio", 5), "topAccount": ("longShortRatio", 4), "taker": ("buySellRatio", 7)}
+    shift = {"taker": 300000}
     found = {name: re.search(rf"{name} ts=(\d+) .*?{field}=(\S+)", text) for name, (field, _) in keys.items()}
     any_ts = next((int(f.group(1)) for f in found.values() if f), None)
     if any_ts:
@@ -178,13 +187,14 @@ def main():
             f = found[name]
             if not f:
                 continue
-            row = met.get(int(f.group(1)))
+            row = met.get(int(f.group(1)) + shift.get(name, 0))
             if not row:
                 print(f"  ?  {name}: bucket {f.group(1)} not in the archive file")
                 continue
-            chk.cmp(f"{name}.{field}", num(f.group(2)), float(row[col]), rel=1e-6)
+            dec = len(f.group(2).split('.')[1]) if '.' in f.group(2) else 0      # the API's own rounding
+            chk.cmp(f"{name}.{field}", num(f.group(2)), float(row[col]), rel=1e-6, abs_=0.5 * 10 ** -dec + 1e-12, near_rel=1e-3)
 
-    print(f"\nRESULT: {chk.ok} matched, {chk.bad} mismatched")
+    print(f"\nRESULT: {chk.ok} matched, {chk.near} close (Binance API vs archive, <0.1%), {chk.bad} mismatched")
     sys.exit(1 if chk.bad else 0)
 
 
